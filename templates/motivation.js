@@ -2,15 +2,22 @@ window.GYMSPIRE_TEMPLATES = window.GYMSPIRE_TEMPLATES || [];
 window.GYMSPIRE_TEMPLATES.push({
   id: 'motivation',
   name: '동기부여 / 운동자극',
-  slides: 1,
+  defaultSlides: 1,
+  maxSlides: 8,
   fields: [
     { key: 'bgImage',   label: '배경 이미지', type: 'image',    default: '' },
     { key: 'showBadge', label: '뱃지 표시',   type: 'toggle',   default: true },
     { key: 'badge',     label: '뱃지 텍스트', type: 'text',     default: '운동자극은 GYMSPIRE', placeholder: '뱃지 텍스트' },
     { key: 'title',     label: '제목',         type: 'textarea', default: 'GYMSPIRE\n운동은 바로 이거야', placeholder: '메인 제목' },
     { key: 'subtitle',  label: '소제목',       type: 'text',     default: '소제목', placeholder: '소제목' },
+    { key: 'body',      label: '본문',         type: 'textarea', default: '', placeholder: '본문 (**볼드** 지원)' },
   ],
-  render(s) {
+  fieldsForSlide(index) {
+    if (index === 0) return ['bgImage', 'showBadge', 'badge', 'title', 'subtitle'];
+    return ['bgImage', 'title', 'body'];
+  },
+  render(s, slideIndex, total) {
+    if (slideIndex > 0) return window.contentSlide(s, slideIndex, total);
     const badge = (s.showBadge !== false) && s.badge
       ? `<div style="position:absolute;bottom:460px;left:48px;background:#2B9BF4;color:#fff;padding:10px 18px;border-radius:4px;font-size:22px;font-weight:700;letter-spacing:0.5px;white-space:nowrap;">${s.badge}</div>`
       : '';

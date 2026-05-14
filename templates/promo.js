@@ -2,15 +2,23 @@ window.GYMSPIRE_TEMPLATES = window.GYMSPIRE_TEMPLATES || [];
 window.GYMSPIRE_TEMPLATES.push({
   id: 'promo',
   name: '할인 / 프로모션',
-  slides: 1,
+  defaultSlides: 1,
+  maxSlides: 8,
   fields: [
     { key: 'bgImage',   label: '배경 이미지',  type: 'image', default: '' },
     { key: 'badge',     label: '뱃지 텍스트', type: 'text',  default: 'LIMITED', placeholder: 'LIMITED' },
     { key: 'discount',  label: '할인율',       type: 'text',  default: '30% OFF', placeholder: '30% OFF' },
     { key: 'condition', label: '조건',         type: 'text',  default: '전 상품 · 한정수량', placeholder: '조건' },
     { key: 'period',    label: '기간',         type: 'text',  default: '05.15 – 05.20', placeholder: '기간' },
+    { key: 'title',     label: '제목 (내용슬라이드)', type: 'textarea', default: '', placeholder: '내용 슬라이드 제목' },
+    { key: 'body',      label: '본문',         type: 'textarea', default: '', placeholder: '본문 (**볼드** 지원)' },
   ],
-  render(s) {
+  fieldsForSlide(index) {
+    if (index === 0) return ['bgImage', 'badge', 'discount', 'condition', 'period'];
+    return ['bgImage', 'title', 'body'];
+  },
+  render(s, slideIndex, total) {
+    if (slideIndex > 0) return window.contentSlide(s, slideIndex, total);
     return `
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.65) 50%,#000 100%);"></div>
       <div style="position:absolute;top:48px;left:0;right:0;text-align:center;font-size:22px;font-weight:700;letter-spacing:4px;color:rgba(255,255,255,0.85);">GYMSPIRE</div>

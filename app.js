@@ -8,6 +8,16 @@ function getTemplate(id) {
   return window.GYMSPIRE_TEMPLATES.find(t => t.id === id);
 }
 
+window.contentSlide = function(s, idx, total) {
+  const body = (s.body || '').replace(/\*\*(.*?)\*\*/g, '<span style="font-weight:800;color:#fff">$1</span>');
+  return `
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 48%,rgba(0,0,0,0.75) 65%,#000 100%);"></div>
+    <div style="position:absolute;top:40px;right:48px;font-size:18px;font-weight:400;color:rgba(255,255,255,0.2);">${idx}/${total - 1}</div>
+    <div style="position:absolute;bottom:220px;left:48px;right:48px;font-size:52px;font-weight:800;line-height:1.2;color:#fff;white-space:pre-wrap;">${s.title || ''}</div>
+    <div style="position:absolute;bottom:80px;left:48px;right:48px;font-size:26px;font-weight:400;color:rgba(255,255,255,0.75);line-height:1.6;">${body}</div>
+  `;
+};
+
 const PINTEREST_KEYWORDS = [
   'Gymshark aesthetic',
   'Gymshark men',
@@ -53,33 +63,73 @@ function loadTemplate(id) {
   if (!template) return;
   state.templateId = id;
   state.slideIndex = 0;
-  state.slides = Array.from({ length: template.slides }, () => {
+  const count = template.defaultSlides || template.slides || 1;
+  state.slides = Array.from({ length: count }, () => {
     const defaults = {};
-    template.fields.forEach(f => { defaults[f.key] = f.default; });
+    template.fields.forEach(f => { defaults[f.key] = f.default ?? ''; });
     return defaults;
   });
   renderGallery();
-  renderSlideNav();
+  renderFilmstrip();
   renderEditor();
   renderCanvas();
 }
 
-function renderSlideNav() {
+function addSlide() {
   const template = getTemplate(state.templateId);
-  const nav = document.getElementById('slideNav');
-  if (template.slides <= 1) { nav.innerHTML = ''; return; }
-  nav.innerHTML = Array.from({ length: template.slides }, (_, i) => `
-    <button class="slide-tab ${i === state.slideIndex ? 'active' : ''}" data-index="${i}">${i + 1}</button>
-  `).join('');
-  nav.querySelectorAll('.slide-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.slideIndex = parseInt(btn.dataset.index);
-      renderSlideNav();
+  const maxSlides = template.maxSlides || template.slides || 10;
+  if (state.slides.length >= maxSlides) return;
+  const defaults = {};
+  template.fields.forEach(f => { defaults[f.key] = f.default ?? ''; });
+  state.slides.push(defaults);
+  state.slideIndex = state.slides.length - 1;
+  renderFilmstrip();
+  renderEditor();
+  renderCanvas();
+}
+
+function removeCurrentSlide() {
+  const template = getTemplate(state.templateId);
+  const minSlides = template.defaultSlides || 1;
+  if (state.slides.length <= minSlides || state.slideIndex === 0) return;
+  state.slides.splice(state.slideIndex, 1);
+  state.slideIndex = Math.min(state.slideIndex, state.slides.length - 1);
+  renderFilmstrip();
+  renderEditor();
+  renderCanvas();
+}
+
+function renderFilmstrip() {
+  const template = getTemplate(state.templateId);
+  const filmstrip = document.getElementById('filmstrip');
+  const maxSlides = template.maxSlides || template.slides || 10;
+
+  filmstrip.innerHTML = state.slides.map((slideState, i) => {
+    const bg = slideState.bgImage ? `url(${slideState.bgImage})` : 'none';
+    return `
+      <div class="filmstrip-item ${i === state.slideIndex ? 'active' : ''}" data-index="${i}">
+        <div class="filmstrip-preview-wrap">
+          <div class="filmstrip-preview" style="background-image:${bg}">
+            ${template.render(slideState, i, state.slides.length)}
+          </div>
+        </div>
+        <span class="filmstrip-num">${i + 1}</span>
+      </div>
+    `;
+  }).join('') + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '');
+
+  filmstrip.querySelectorAll('.filmstrip-item').forEach(item => {
+    item.addEventListener('click', () => {
+      state.slideIndex = parseInt(item.dataset.index);
+      renderFilmstrip();
       renderEditor();
       renderCanvas();
     });
   });
+  const addBtn = document.getElementById('addSlideBtn');
+  if (addBtn) addBtn.addEventListener('click', addSlide);
 }
+
 
 // ── Task 4: Canvas Scaling + Editor Panel ───────────────────────────────────
 
@@ -87,7 +137,7 @@ function scaleCanvas() {
   const area = document.querySelector('.canvas-area');
   const wrapper = document.querySelector('.canvas-wrapper');
   const canvas = document.getElementById('canvas');
-  const availH = area.clientHeight - 120;
+  const availH = area.clientHeight - 170;
   const availW = area.clientWidth - 40;
   const scale = Math.min(availW / 1080, availH / 1350);
   canvas.style.transform = `scale(${scale})`;
@@ -100,14 +150,27 @@ function renderCanvas() {
   const canvas = document.getElementById('canvas');
   const slideState = state.slides[state.slideIndex] || {};
   canvas.style.backgroundImage = slideState.bgImage ? `url(${slideState.bgImage})` : 'none';
-  canvas.innerHTML = template.render(slideState, state.slideIndex);
+  canvas.innerHTML = template.render(slideState, state.slideIndex, state.slides.length);
 }
 
 function renderEditor() {
   const template = getTemplate(state.templateId);
   const fieldsEl = document.getElementById('fields');
   const slideState = state.slides[state.slideIndex] || {};
-  fieldsEl.innerHTML = template.fields.map(f => renderField(f, slideState[f.key] ?? f.default)).join('');
+
+  const visibleKeys = template.fieldsForSlide ? template.fieldsForSlide(state.slideIndex) : null;
+  const visibleFields = visibleKeys ? template.fields.filter(f => visibleKeys.includes(f.key)) : template.fields;
+
+  const canRemove = state.slideIndex > 0 && state.slides.length > (template.defaultSlides || 1);
+  const slideInfo = `<div class="slide-info">
+    <span>SLIDE ${state.slideIndex + 1} / ${state.slides.length}</span>
+    ${canRemove ? `<button class="remove-slide-btn" id="removeSlideBtn">× 삭제</button>` : ''}
+  </div>`;
+
+  fieldsEl.innerHTML = slideInfo + visibleFields.map(f => renderField(f, slideState[f.key] ?? f.default)).join('');
+
+  const removeBtn = document.getElementById('removeSlideBtn');
+  if (removeBtn) removeBtn.addEventListener('click', removeCurrentSlide);
 
   fieldsEl.querySelectorAll('[data-key]').forEach(el => {
     const key = el.dataset.key;
@@ -182,6 +245,7 @@ function escHtml(str) {
 function updateField(key, value) {
   state.slides[state.slideIndex][key] = value;
   renderCanvas();
+  renderFilmstrip();
 }
 
 // ── Task 10: Pinterest Quick Links ──────────────────────────────────────────
