@@ -11,10 +11,12 @@ function getTemplate(id) {
 window.contentSlide = function(s, idx, total) {
   const body = (s.body || '').replace(/\*\*(.*?)\*\*/g, '<span style="font-weight:800;color:#fff">$1</span>');
   return `
-    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 48%,rgba(0,0,0,0.75) 65%,#000 100%);"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,0.75) 62%,#000 100%);"></div>
     <div style="position:absolute;top:40px;right:48px;font-size:18px;font-weight:400;color:rgba(255,255,255,0.2);">${idx}/${total - 1}</div>
-    <div style="position:absolute;bottom:220px;left:48px;right:48px;font-size:52px;font-weight:800;line-height:1.2;color:#fff;white-space:pre-wrap;">${s.title || ''}</div>
-    <div style="position:absolute;bottom:80px;left:48px;right:48px;font-size:26px;font-weight:400;color:rgba(255,255,255,0.75);line-height:1.6;">${body}</div>
+    <div style="position:absolute;bottom:120px;left:56px;right:56px;">
+      <div style="font-size:56px;font-weight:800;line-height:1.2;color:#fff;white-space:pre-wrap;margin-bottom:28px;">${s.title || ''}</div>
+      <div style="font-size:34px;font-weight:400;color:rgba(255,255,255,0.78);line-height:1.7;">${body}</div>
+    </div>
   `;
 };
 
@@ -42,6 +44,13 @@ function init() {
   renderPinterest();
   loadTemplate('motivation');
   document.getElementById('exportBtn').addEventListener('click', exportPng);
+  document.getElementById('pinterestToggle').addEventListener('click', () => {
+    const grid = document.getElementById('keywordGrid');
+    const btn = document.getElementById('pinterestToggle');
+    const hidden = grid.style.display === 'none';
+    grid.style.display = hidden ? '' : 'none';
+    btn.textContent = hidden ? '−' : '+';
+  });
 }
 
 // ── Task 3: Template Gallery + State ────────────────────────────────────────
@@ -172,6 +181,22 @@ function renderEditor() {
   const removeBtn = document.getElementById('removeSlideBtn');
   if (removeBtn) removeBtn.addEventListener('click', removeCurrentSlide);
 
+  fieldsEl.querySelectorAll('.bold-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ta = fieldsEl.querySelector(`[data-key="${btn.dataset.target}"]`);
+      if (!ta) return;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const sel = ta.value.slice(start, end);
+      if (!sel) return;
+      ta.value = ta.value.slice(0, start) + `**${sel}**` + ta.value.slice(end);
+      ta.selectionStart = start;
+      ta.selectionEnd = end + 4;
+      ta.focus();
+      updateField(btn.dataset.target, ta.value);
+    });
+  });
+
   fieldsEl.querySelectorAll('[data-key]').forEach(el => {
     const key = el.dataset.key;
     if (el.classList.contains('field-image-btn')) return;
@@ -212,7 +237,10 @@ function renderField(field, value) {
       </div>`;
     case 'textarea':
       return `<div class="field-group">
-        <label class="field-label">${field.label}</label>
+        <div class="textarea-header">
+          <label class="field-label">${field.label}</label>
+          <button class="bold-btn" data-target="${field.key}" title="선택 텍스트 볼드">B</button>
+        </div>
         <textarea class="field-textarea" data-key="${field.key}"
                   placeholder="${field.placeholder || ''}">${escHtml(String(value ?? ''))}</textarea>
       </div>`;
