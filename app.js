@@ -8,6 +8,23 @@ function getTemplate(id) {
   return window.GYMSPIRE_TEMPLATES.find(t => t.id === id);
 }
 
+window.outroSlide = function() {
+  return `
+    <div style="position:absolute;inset:0;background:#000;"></div>
+    <div style="position:absolute;top:48px;left:0;right:0;text-align:center;font-size:20px;font-weight:700;letter-spacing:4px;color:rgba(255,255,255,0.5);">GYMSPIRE</div>
+    <div style="position:absolute;top:50%;left:56px;right:56px;transform:translateY(-55%);">
+      <div style="font-size:48px;margin-bottom:24px;">🇰🇷</div>
+      <div style="font-size:20px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:1.5px;margin-bottom:20px;">No.1 'GYMSHARK' 전문 커뮤니티</div>
+      <div style="font-size:68px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:36px;letter-spacing:-1px;">운동은<br>멈추지 않는다</div>
+      <div style="font-size:28px;font-weight:400;color:rgba(255,255,255,0.5);line-height:1.6;">팔로우하고 짐샤크를 경험해봐<br>링크에서 국내배송 바로 가능</div>
+    </div>
+    <div style="position:absolute;bottom:90px;left:56px;">
+      <div style="font-size:36px;font-weight:900;color:#2B9BF4;letter-spacing:2px;">@GYMSPIRE</div>
+      <div style="font-size:20px;font-weight:400;color:rgba(255,255,255,0.25);margin-top:10px;letter-spacing:1px;">FOLLOW · LINK IN BIO</div>
+    </div>
+  `;
+};
+
 window.contentSlide = function(s, idx, total) {
   const body = (s.body || '').replace(/\*\*(.*?)\*\*/g, '<span style="font-weight:800;color:#fff">$1</span>');
   return `
@@ -113,6 +130,16 @@ function renderFilmstrip() {
   const filmstrip = document.getElementById('filmstrip');
   const maxSlides = template.maxSlides || template.slides || 10;
 
+  const outroIndex = state.slides.length;
+  const outroItem = `
+    <div class="filmstrip-item ${state.slideIndex === outroIndex ? 'active' : ''}" data-index="${outroIndex}">
+      <div class="filmstrip-preview-wrap">
+        <div class="filmstrip-preview">${window.outroSlide()}</div>
+      </div>
+      <span class="filmstrip-num">END</span>
+    </div>
+  `;
+
   filmstrip.innerHTML = state.slides.map((slideState, i) => {
     const bg = slideState.bgImage ? `url(${slideState.bgImage})` : 'none';
     return `
@@ -125,7 +152,9 @@ function renderFilmstrip() {
         <span class="filmstrip-num">${i + 1}</span>
       </div>
     `;
-  }).join('') + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '');
+  }).join('')
+  + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '')
+  + outroItem;
 
   filmstrip.querySelectorAll('.filmstrip-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -157,6 +186,11 @@ function scaleCanvas() {
 function renderCanvas() {
   const template = getTemplate(state.templateId);
   const canvas = document.getElementById('canvas');
+  if (state.slideIndex === state.slides.length) {
+    canvas.style.backgroundImage = 'none';
+    canvas.innerHTML = window.outroSlide();
+    return;
+  }
   const slideState = state.slides[state.slideIndex] || {};
   canvas.style.backgroundImage = slideState.bgImage ? `url(${slideState.bgImage})` : 'none';
   canvas.innerHTML = template.render(slideState, state.slideIndex, state.slides.length);
@@ -166,6 +200,11 @@ function renderEditor() {
   const template = getTemplate(state.templateId);
   const fieldsEl = document.getElementById('fields');
   const slideState = state.slides[state.slideIndex] || {};
+
+  if (state.slideIndex === state.slides.length) {
+    fieldsEl.innerHTML = `<div style="padding:20px 0;font-size:11px;color:#444;letter-spacing:1px;line-height:1.8;">고정 아웃트로 슬라이드<br><span style="color:#333;">모든 게시물의 마지막 페이지</span></div>`;
+    return;
+  }
 
   const visibleKeys = template.fieldsForSlide ? template.fieldsForSlide(state.slideIndex) : null;
   const visibleFields = visibleKeys ? template.fields.filter(f => visibleKeys.includes(f.key)) : template.fields;
