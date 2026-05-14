@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>GYMSPIRE Template Tool</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-name">GYMSPIRE</span>
+        <span class="brand-sub">Template Tool</span>
+      </div>
+      <div class="sidebar-section">
+        <p class="section-label">TEMPLATE</p>
+        <div id="templateList"></div>
+      </div>
+      <div class="sidebar-section pinterest-section">
+        <p class="section-label">PINTEREST</p>
+        <div id="keywordGrid"></div>
+      </div>
+    </aside>
+
+    <main class="canvas-area">
+      <div class="canvas-wrapper">
+        <div class="canvas" id="canvas"></div>
+      </div>
+      <div class="slide-nav" id="slideNav"></div>
+      <button class="export-btn" id="exportBtn">↓  PNG 내보내기</button>
+    </main>
+
+    <aside class="editor-panel">
+      <p class="section-label">EDIT</p>
+      <div id="fields"></div>
+    </aside>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="templates/motivation.js"></script>
+  <script src="templates/product.js"></script>
+  <script src="templates/promo.js"></script>
+  <script src="templates/tips.js"></script>
+  <script src="templates/cardnews.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

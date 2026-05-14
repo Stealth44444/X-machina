@@ -1,0 +1,14 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Pretendard Variable', Pretendard, sans-serif;
+  background: #111;
+  color: #fff;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app { display: flex; height: 100vh; }
+.sidebar { width: 220px; min-width: 220px; background: #1a1a1a; overflow-y: auto; }
+.canvas-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #0f0f0f; }
+.editor-panel { width: 280px; min-width: 280px; background: #1a1a1a; overflow-y: auto; padding: 20px; }
