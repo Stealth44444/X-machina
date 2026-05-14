@@ -8,6 +8,23 @@ function getTemplate(id) {
   return window.GYMSPIRE_TEMPLATES.find(t => t.id === id);
 }
 
+const PINTEREST_KEYWORDS = [
+  'Gymshark aesthetic',
+  'Gymshark men',
+  'Gymshark women',
+  'Gymshark outfit',
+  'David Laid',
+  'Chris Bumstead',
+  'Zac Perna',
+  'Ryan Terry',
+  'Nikki Blackketter',
+  'gym aesthetic',
+  'physique aesthetic',
+  "men's physique",
+  'fitness photography',
+  'bodybuilding aesthetic',
+];
+
 function init() {
   scaleCanvas();
   window.addEventListener('resize', scaleCanvas);
@@ -167,9 +184,15 @@ function updateField(key, value) {
   renderCanvas();
 }
 
-// ── Stub: Pinterest panel (Task 6) ──────────────────────────────────────────
+// ── Task 10: Pinterest Quick Links ──────────────────────────────────────────
 
-function renderPinterest() {}
+function renderPinterest() {
+  const grid = document.getElementById('keywordGrid');
+  grid.innerHTML = PINTEREST_KEYWORDS.map(kw => {
+    const url = `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(kw)}`;
+    return `<a class="keyword-btn" href="${url}" target="_blank" rel="noopener">${kw}</a>`;
+  }).join('');
+}
 
 // ── Stub: PNG export (Task 7) ────────────────────────────────────────────────
 
