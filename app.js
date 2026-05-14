@@ -194,8 +194,43 @@ function renderPinterest() {
   }).join('');
 }
 
-// ── Stub: PNG export (Task 7) ────────────────────────────────────────────────
+// ── Task 11: PNG Export ──────────────────────────────────────────────────────
 
-function exportPng() {}
+function exportPng() {
+  const canvas = document.getElementById('canvas');
+  const btn = document.getElementById('exportBtn');
+
+  btn.disabled = true;
+  btn.textContent = '렌더링 중...';
+
+  const prevTransform = canvas.style.transform;
+  canvas.style.position = 'fixed';
+  canvas.style.left = '-9999px';
+  canvas.style.top = '0';
+  canvas.style.transform = 'none';
+
+  html2canvas(canvas, {
+    scale: 1,
+    width: 1080,
+    height: 1350,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#000000',
+  }).then(rendered => {
+    const ts = new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '').replace(/-/g, '');
+    const filename = `gymspire-${state.templateId}-${ts}.png`;
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = rendered.toDataURL('image/png');
+    link.click();
+  }).finally(() => {
+    canvas.style.position = '';
+    canvas.style.left = '';
+    canvas.style.top = '';
+    canvas.style.transform = prevTransform;
+    btn.disabled = false;
+    btn.textContent = '↓  PNG 내보내기';
+  });
+}
 
 document.addEventListener('DOMContentLoaded', init);
