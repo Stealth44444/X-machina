@@ -791,6 +791,13 @@ body {
 .ai-result-header { padding-top: 20px; border-top: 1px solid #222; margin-bottom: 12px; }
 .ai-result-list { max-height: 200px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
 
+.ai-slide-target-row {
+  padding: 10px 0;
+  border-top: 1px solid #1a1a1a;
+  border-bottom: 1px solid #1a1a1a;
+  margin-bottom: 12px;
+}
+
 .ai-feedback-row {
   display: flex;
   gap: 8px;

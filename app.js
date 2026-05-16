@@ -1365,6 +1365,9 @@ function applyAiSlides() {
 
   aiPendingSlides.forEach((slideData, i) => {
     if (i >= state.slides.length) return;
+    state.slides[i].bgImage = '';
+    delete state.slides[i].bgPosX;
+    delete state.slides[i].bgPosY;
     const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
       .filter(k => k !== 'bgImage');
     keys.forEach(k => {
