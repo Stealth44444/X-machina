@@ -1131,17 +1131,12 @@ body {
 }
 
 .ai-news-count {
-  font-size: 10px;
-  color: #333;
-  letter-spacing: 0.3px;
+  font-size: 11px;
+  color: #444;
 }
 
 .ai-news-count--active {
   color: #2B9BF4;
-  background: rgba(43,155,244,0.08);
-  border: 1px solid rgba(43,155,244,0.2);
-  padding: 2px 8px;
-  border-radius: 10px;
 }
 
 /* News source description line */
