@@ -1041,6 +1041,8 @@ function openAiModal() {
     document.getElementById('aiSlideTargetField').style.display = 'none';
     document.getElementById('aiCountField').style.display = '';
   }
+  const hasContent = state.slides.some(s => s.title);
+  document.getElementById('aiSlideTargetSection').style.display = hasContent ? '' : 'none';
   aiPendingSlides = null;
   aiConversationHistory = [];
   renderAiNewsPreview();
