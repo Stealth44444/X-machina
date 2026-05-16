@@ -786,15 +786,16 @@ function buildAiPrompt(template, keyword, tone, slideCount, speech, target) {
 - **볼드**는 핵심 수치·이름·키워드만. 슬라이드당 최대 3개
 - 짧은 문장 + 긴 문장을 섞어 리듬 생성. 줄바꿈으로 호흡 조절
 - 각 슬라이드는 독립적으로 읽혀도 가치 있어야 함
+- **body 필드에 CTA 문구 절대 금지**: "국내배송", "링크 클릭", "지금 확인", "구매" 등 구매 유도 표현은 body에 넣지 말 것. CTA는 오직 "cta" 필드에만 작성.
 
 ### subtitle / cta
-- subtitle: title을 보완하는 맥락 추가 1줄
-- cta: "지금 확인 →" / "국내배송 가능 · 링크 클릭" 형식. 직접적 "구매" 표현 자제
+- subtitle: title을 보완하는 맥락 추가 1줄. 구매 유도 표현 금지.
+- cta 필드가 있는 경우에만: "지금 확인 →" / "국내배송 가능 · 링크 클릭" 형식. 직접적 "구매" 표현 자제
 
 ### 서사 구조 (필수)
 - 슬라이드 1 (표지): 강한 후킹. 다음 슬라이드가 궁금하게 만듦
 - 슬라이드 2~N-1: 각각 독립된 가치 단위. 앞에서 던진 궁금증 해소 + 새 궁금증 생성
-- 마지막 슬라이드: 실천/행동으로 자연스럽게 연결. 단정하게 마무리
+- 마지막 슬라이드: 콘텐츠 흐름을 자연스럽게 마무리. 구매·링크 유도 문구 없이 인사이트나 감정으로 닫을 것
 ${AI_TONE_GUIDES[tone]}
 ${AI_SPEECH_GUIDES[speech] || AI_SPEECH_GUIDES.friendly}
 ${AI_TARGET_GUIDES[target] || AI_TARGET_GUIDES.all}`;
