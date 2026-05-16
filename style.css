@@ -71,7 +71,7 @@ body {
   background: none;
   border: 1px solid #1e1e1e;
   border-radius: 5px;
-  color: #444;
+  color: #777;
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
@@ -81,8 +81,8 @@ body {
 }
 
 .history-btn:not(:disabled):hover {
-  border-color: #333;
-  color: #aaa;
+  border-color: #444;
+  color: #ccc;
 }
 
 .history-btn:disabled {
@@ -321,9 +321,9 @@ body {
 .export-btn {
   padding: 10px 16px;
   background: none;
-  border: 1px solid #252525;
+  border: 1px solid #2a2a2a;
   border-radius: 4px;
-  color: #444;
+  color: #888;
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -489,7 +489,7 @@ body {
   background: none;
   border: 1.5px dashed #2a2a2a;
   border-radius: 3px;
-  color: #444;
+  color: #777;
   font-size: 22px;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -545,7 +545,7 @@ body {
 .section-toggle {
   background: none;
   border: none;
-  color: #444;
+  color: #777;
   font-size: 15px;
   cursor: pointer;
   padding: 0 4px;
@@ -554,7 +554,7 @@ body {
 }
 
 .section-toggle:hover {
-  color: #888;
+  color: #bbb;
 }
 
 /* ── AI generation button ───────────────────────────────────────────────────── */
@@ -609,59 +609,59 @@ body {
 .ai-field--full { grid-column: 1 / -1; }
 .ai-hint {
   font-size: 11px;
-  color: #272727;
+  color: #555;
 }
 .ai-field { margin-bottom: 18px; }
-.ai-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #383838; text-transform: uppercase; margin-bottom: 8px; }
+.ai-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #555; text-transform: uppercase; margin-bottom: 8px; }
 .ai-input {
   width: 100%; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 6px;
   color: #aaa; font-family: inherit; font-size: 13px; padding: 11px 13px;
   outline: none; transition: border-color 0.15s, color 0.15s;
 }
-.ai-input::placeholder { color: #2a2a2a; }
+.ai-input::placeholder { color: #333; }
 .ai-input:focus { border-color: #2B9BF4; color: #e0e0e0; }
 .ai-textarea { min-height: 96px; resize: vertical; line-height: 1.65; }
 .ai-tone-row { display: flex; gap: 6px; }
 .ai-tone-btn {
-  flex: 1; padding: 8px 0; background: none; border: 1px solid #161616;
-  border-radius: 5px; color: #2e2e2e; font-family: inherit; font-size: 11px;
+  flex: 1; padding: 8px 0; background: none; border: 1px solid #252525;
+  border-radius: 5px; color: #666; font-family: inherit; font-size: 11px;
   font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.ai-tone-btn:hover { border-color: #2a2a2a; color: #555; }
+.ai-tone-btn:hover { border-color: #444; color: #aaa; }
 .ai-tone-btn.active { border-color: #2B9BF4; color: #2B9BF4; background: rgba(43,155,244,0.07); }
 .ai-count-btn {
-  flex: 1; padding: 7px 0; background: none; border: 1px solid #161616;
-  border-radius: 5px; color: #2e2e2e; font-family: inherit; font-size: 11px;
+  flex: 1; padding: 7px 0; background: none; border: 1px solid #252525;
+  border-radius: 5px; color: #666; font-family: inherit; font-size: 11px;
   font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.ai-count-btn:hover { border-color: #2a2a2a; color: #555; }
+.ai-count-btn:hover { border-color: #444; color: #aaa; }
 .ai-count-btn.active { border-color: #2B9BF4; color: #2B9BF4; background: rgba(43,155,244,0.07); }
 .ai-speech-btn, .ai-target-btn {
-  flex: 1; padding: 8px 0; background: none; border: 1px solid #161616;
-  border-radius: 5px; color: #2e2e2e; font-family: inherit; font-size: 11px;
+  flex: 1; padding: 8px 0; background: none; border: 1px solid #252525;
+  border-radius: 5px; color: #666; font-family: inherit; font-size: 11px;
   font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.ai-speech-btn:hover, .ai-target-btn:hover { border-color: #2a2a2a; color: #555; }
+.ai-speech-btn:hover, .ai-target-btn:hover { border-color: #444; color: #aaa; }
 .ai-speech-btn.active, .ai-target-btn.active { border-color: #2B9BF4; color: #2B9BF4; background: rgba(43,155,244,0.07); }
-.ai-result-header { padding-top: 20px; border-top: 1px solid #161616; margin-bottom: 12px; }
-.ai-result-list { max-height: 190px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #1e1e1e transparent; }
-.ai-slide-preview { padding: 10px 0; border-bottom: 1px solid #141414; }
+.ai-result-header { padding-top: 20px; border-top: 1px solid #222; margin-bottom: 12px; }
+.ai-result-list { max-height: 200px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+.ai-slide-preview { padding: 10px 0; border-bottom: 1px solid #1e1e1e; }
 .ai-slide-preview:last-child { border-bottom: none; }
 .ai-slide-num { font-size: 9px; font-weight: 700; color: #2B9BF4; letter-spacing: 2px; margin-bottom: 5px; }
-.ai-slide-field { font-size: 12px; color: #3a3a3a; margin-bottom: 2px; line-height: 1.55; }
-.ai-slide-field strong { color: #4a4a4a; font-weight: 600; }
+.ai-slide-field { font-size: 12px; color: #666; margin-bottom: 2px; line-height: 1.55; }
+.ai-slide-field strong { color: #999; font-weight: 600; }
 .ai-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 32px 24px;
-  border-top: 1px solid #161616;
+  border-top: 1px solid #1e1e1e;
   flex-shrink: 0;
 }
 .ai-actions-right { display: flex; gap: 8px; }
 .ai-btn { padding: 9px 20px; border-radius: 5px; font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
-.ai-btn-ghost { background: none; border: 1px solid #1a1a1a; color: #333; }
-.ai-btn-ghost:hover { border-color: #2a2a2a; color: #666; }
+.ai-btn-ghost { background: none; border: 1px solid #2a2a2a; color: #888; }
+.ai-btn-ghost:hover { border-color: #555; color: #ccc; }
 .ai-btn-primary { background: #2B9BF4; border: 1px solid #2B9BF4; color: #fff; }
 .ai-btn-primary:hover { background: #1a8ae0; border-color: #1a8ae0; }
 .ai-btn-primary:disabled { background: #161616; border-color: #161616; color: #2a2a2a; cursor: not-allowed; }
@@ -730,13 +730,13 @@ body {
 
 .modal-cancel {
   background: none;
-  border: 1px solid #252525;
-  color: #444;
+  border: 1px solid #2a2a2a;
+  color: #888;
 }
 
 .modal-cancel:hover {
-  border-color: #444;
-  color: #888;
+  border-color: #555;
+  color: #ccc;
 }
 
 .modal-confirm {
@@ -899,7 +899,7 @@ body {
   background: none;
   border: 1px solid #2a2a2a;
   border-radius: 3px;
-  color: #444;
+  color: #777;
   font-size: 13px;
   cursor: pointer;
   padding: 1px 6px;
