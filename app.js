@@ -857,7 +857,9 @@ ${GYMSHARK_BRAND_KNOWLEDGE}
 ### body (본문)
 - 핵심 메시지 → 배경/근거 → 독자 적용 순서로 흐름
 - **볼드**는 핵심 수치·이름·키워드만. 슬라이드당 최대 3개
-- 짧은 문장 + 긴 문장을 섞어 리듬 생성. 줄바꿈으로 호흡 조절
+- 짧은 문장 + 긴 문장을 섞어 리듬 생성
+- **줄바꿈 필수**: 문장이 끝날 때마다 반드시 \n 삽입. "습니다.", "어요.", "세요.", "다.", "요." 등 문장 종결 후 반드시 다음 문장은 새 줄에서 시작
+- 2-3문장마다 빈 줄(\n\n)로 단락 구분해 시각적 호흡 제공
 - 각 슬라이드는 독립적으로 읽혀도 가치 있어야 함
 - **body 필드에 CTA 문구 절대 금지**: "국내배송", "링크 클릭", "지금 확인", "구매" 등 구매 유도 표현은 body에 넣지 말 것. CTA는 오직 "cta" 필드에만 작성.
 
@@ -994,6 +996,15 @@ function renderAiPreview(slides, template) {
   }).join('');
 }
 
+function smartKoreanBreaks(text) {
+  if (!text) return text;
+  return text
+    .replace(/(습니다|니다|세요|어요|아요|겠어|겠죠|군요|네요|죠)\.\s+(?=[가-힣])/g, '$1.\n')
+    .replace(/([다요])\.\s+(?=[가-힣])/g, '$1.\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function applyAiSlides() {
   if (!aiPendingSlides) return;
   const template = getTemplate(state.templateId);
@@ -1010,7 +1021,10 @@ function applyAiSlides() {
     if (i >= state.slides.length) return;
     const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
       .filter(k => k !== 'bgImage');
-    keys.forEach(k => { if (slideData[k] !== undefined) state.slides[i][k] = slideData[k]; });
+    keys.forEach(k => {
+      if (slideData[k] === undefined) return;
+      state.slides[i][k] = k === 'body' ? smartKoreanBreaks(slideData[k]) : slideData[k];
+    });
   });
 
   state.slideIndex = 0;
@@ -1155,10 +1169,10 @@ let newsPage = 0;
 let newsFilter = 'all';
 
 const NEWS_SOURCE_LABELS = {
-  news:    { label: '뉴스',      short: '뉴스' },
-  newsapi: { label: 'NewsAPI',  short: 'NewsAPI' },
-  blog:    { label: '공식 블로그', short: '공식' },
-  youtube: { label: 'YouTube',  short: 'YouTube' },
+  news:    { label: '뉴스',       short: '뉴스',    desc: 'Google · Bing RSS — 키워드 기반, 90일 이내, 무제한' },
+  newsapi: { label: 'NewsAPI',   short: 'NewsAPI', desc: 'NewsAPI.org — 30일 이내 기사만 제공 (무료 플랜 제한)' },
+  blog:    { label: '공식 블로그', short: '공식',    desc: 'gymshark.com/blog — 짐샤크 공식 발행 콘텐츠' },
+  youtube: { label: 'YouTube',   short: 'YouTube', desc: '짐샤크 공식 채널 — 날짜 제한 없음, 최신 12개' },
 };
 
 function setMode(mode) {
@@ -1249,7 +1263,10 @@ function renderFullNewsPanel(status) {
             ${label}${src ? ` (${counts[s]})` : ''}
           </button>`;
         }).join('')}
-      </div>`;
+      </div>
+      ${newsFilter !== 'all' && NEWS_SOURCE_LABELS[newsFilter]?.desc
+        ? `<div class="news-source-desc">${escHtml(NEWS_SOURCE_LABELS[newsFilter].desc)}</div>`
+        : ''}`;
 
     view.innerHTML = header + filterTabs + `
       <div class="news-cards-grid">
@@ -1299,13 +1316,17 @@ function renderFullNewsPanel(status) {
 }
 
 function renderAiNewsPreview() {
-  const wrap = document.getElementById('aiNewsPreview');
-  if (!wrap) return;
+  const countEl = document.getElementById('aiNewsCount');
+  if (!countEl) return;
   const on = document.getElementById('aiNewsToggle')?.checked;
-  if (!on || !newsCache.items.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = newsCache.items.slice(0, 4).map(n =>
-    `<span class="ai-news-chip">${escHtml(n.title)}</span>`
-  ).join('');
+  const n = newsCache.items.length;
+  if (!on || !n) {
+    countEl.textContent = '';
+    countEl.className = 'ai-news-count';
+  } else {
+    countEl.textContent = `${n}건 참고 중`;
+    countEl.className = 'ai-news-count ai-news-count--active';
+  }
 }
 
 // ── Task 10: Pinterest Quick Links ──────────────────────────────────────────
