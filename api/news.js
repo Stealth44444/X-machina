@@ -147,22 +147,69 @@ async function fetchYoutube(apiKey) {
   });
 }
 
+// ── Bing News RSS ────────────────────────────────────────────────────────
+async function fetchBingNews() {
+  const url = 'https://www.bing.com/news/search?q=gymshark&format=rss';
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+  });
+  if (!res.ok) return [];
+  const xml = await res.text();
+  const cut = cutoff();
+  const items = [];
+  for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const block = m[1];
+    const title = (
+      block.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ||
+      block.match(/<title>([\s\S]*?)<\/title>/)?.[1] || ''
+    ).replace(/\s*-\s*[^-]{1,40}$/, '').trim();
+    const ms   = new Date(block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || 0).getTime();
+    const link = block.match(/<link>(https?:\/\/[^<\s]+)/)?.[1] || '';
+    if (!title || ms < cut) continue;
+    items.push({ title, date: msToDate(ms), source: 'bing', url: link, ms });
+    if (items.length >= 20) break;
+  }
+  return items;
+}
+
+// ── NewsAPI.org ───────────────────────────────────────────────────────────
+async function fetchNewsApi(apiKey) {
+  const url = `https://newsapi.org/v2/everything?q=gymshark&sortBy=publishedAt&language=en&pageSize=20&apiKey=${apiKey}`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0' },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  if (data.status !== 'ok') return [];
+  const cut = cutoff();
+  return (data.articles || []).flatMap(a => {
+    const ms = new Date(a.publishedAt || 0).getTime();
+    if (!a.title || ms < cut) return [];
+    return [{ title: a.title.replace(/\s*-\s*[^-]{1,40}$/, '').trim(), date: msToDate(ms), source: 'newsapi', url: a.url || '', ms }];
+  });
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const ytKey = process.env.YOUTUBE_API_KEY;
+    const ytKey      = process.env.YOUTUBE_API_KEY;
+    const newsApiKey = process.env.NEWSAPI_KEY;
 
-    const [gnews, blog, youtube] = await Promise.allSettled([
+    const [gnews, bing, newsapi, blog, youtube] = await Promise.allSettled([
       fetchGoogleNews(),
+      fetchBingNews(),
+      newsApiKey ? fetchNewsApi(newsApiKey) : Promise.resolve([]),
       fetchBlog(),
       ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
     ]);
 
     const sourceResults = {
       news:    gnews.status === 'fulfilled'   ? gnews.value   : [],
+      bing:    bing.status === 'fulfilled'    ? bing.value    : [],
+      newsapi: newsapi.status === 'fulfilled' ? newsapi.value : [],
       blog:    blog.status === 'fulfilled'    ? blog.value    : [],
       youtube: youtube.status === 'fulfilled' ? youtube.value : [],
     };
