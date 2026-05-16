@@ -6,6 +6,7 @@ const state = {
   outroPosX: 50,
   outroPosY: 50,
   selectedDragKey: null,
+  activePresetId: null,
 };
 
 function getTemplate(id) {
@@ -1061,6 +1062,7 @@ function loadPreset(id) {
   state.outroImage = preset.outroImage || '';
   state.outroPosX = preset.outroPosX ?? 50;
   state.outroPosY = preset.outroPosY ?? 50;
+  state.activePresetId = id;
   renderGallery();
   renderFilmstrip();
   renderEditor();
@@ -1083,7 +1085,7 @@ function renderPresets() {
     return;
   }
   list.innerHTML = presets.map(p => `
-    <div class="preset-item" data-id="${p.id}">
+    <div class="preset-item ${p.id === state.activePresetId ? 'active' : ''}" data-id="${p.id}">
       <span class="preset-name">${escHtml(p.name)}</span>
       <button class="preset-delete" data-id="${p.id}">×</button>
     </div>
@@ -1091,6 +1093,8 @@ function renderPresets() {
   list.querySelectorAll('.preset-item').forEach(item => {
     item.addEventListener('click', e => {
       if (e.target.classList.contains('preset-delete')) return;
+      item.classList.add('flash');
+      item.addEventListener('animationend', () => item.classList.remove('flash'), { once: true });
       loadPreset(parseInt(item.dataset.id));
     });
   });

@@ -789,6 +789,11 @@ body {
 }
 
 /* ── Preset list ────────────────────────────────────────────────────────────── */
+@keyframes preset-flash {
+  0%   { background: rgba(43,155,244,0.16); }
+  100% { background: transparent; }
+}
+
 .preset-item {
   display: flex;
   align-items: center;
@@ -796,10 +801,30 @@ body {
   padding: 8px 20px;
   cursor: pointer;
   transition: background 0.15s;
+  position: relative;
 }
 
 .preset-item:hover {
   background: #1e1e1e;
+}
+
+.preset-item.active {
+  background: #0a1929;
+}
+
+.preset-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #2B9BF4;
+  border-radius: 0 2px 2px 0;
+}
+
+.preset-item.flash {
+  animation: preset-flash 0.45s ease-out;
 }
 
 .preset-name {
@@ -812,6 +837,10 @@ body {
 
 .preset-item:hover .preset-name {
   color: #ccc;
+}
+
+.preset-item.active .preset-name {
+  color: #2B9BF4;
 }
 
 .preset-delete {
