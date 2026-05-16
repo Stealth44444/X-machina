@@ -138,12 +138,11 @@ async function fetchYoutube(apiKey) {
   );
   if (!r.ok) return [];
   const d = await r.json();
-  const cut = cutoff(YT_CUTOFF_MS);
   return (d.items || []).flatMap(item => {
     const title = item.snippet?.title || '';
     const ms = new Date(item.snippet?.publishedAt || 0).getTime();
     const videoId = item.snippet?.resourceId?.videoId || '';
-    if (!title || ms < cut) return [];
+    if (!title || !ms) return [];
     return [{ title, date: msToDate(ms), source: 'youtube', url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : '', ms }];
   });
 }
