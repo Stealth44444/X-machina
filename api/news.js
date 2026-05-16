@@ -108,36 +108,6 @@ async function fetchYoutube(apiKey) {
   });
 }
 
-// ── Batch translate titles to Korean via OpenAI ──────────────────────────
-async function translateTitles(items, openaiKey) {
-  if (!openaiKey || !items.length) return items;
-  try {
-    const titles = items.map(i => i.title);
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 3000,
-        temperature: 0.2,
-        messages: [{
-          role: 'user',
-          content: `Translate these English news titles to natural Korean. Return ONLY a JSON array of strings in the same order, no extra text:\n${JSON.stringify(titles)}`,
-        }],
-      }),
-    });
-    if (!res.ok) return items;
-    const d = await res.json();
-    const raw = d.choices?.[0]?.message?.content?.trim() || '';
-    const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-    const translated = JSON.parse(cleaned);
-    if (!Array.isArray(translated) || translated.length !== items.length) return items;
-    return items.map((item, i) => ({ ...item, titleKo: translated[i] || '' }));
-  } catch {
-    return items;
-  }
-}
-
 // ── Handler ───────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -145,7 +115,6 @@ export default async function handler(req, res) {
 
   try {
     const ytKey = process.env.YOUTUBE_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
 
     const [gnews, blog, reddit, youtube] = await Promise.allSettled([
       fetchGoogleNews(),
@@ -174,8 +143,6 @@ export default async function handler(req, res) {
         return true;
       })
       .map(({ ms, ...rest }) => rest);
-
-    items = await translateTitles(items, openaiKey);
 
     res.status(200).json({ items, sources: sourceStatus });
   } catch (err) {

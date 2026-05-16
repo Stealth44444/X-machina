@@ -1148,7 +1148,7 @@ function setMode(mode) {
     editorPanel.style.display = 'none';
     newsView.style.display = '';
     btn.classList.add('active');
-    renderFullNewsPanel();
+    renderFullNewsPanel(newsCache.items.length ? undefined : 'loading');
   } else {
     canvasArea.style.display = '';
     editorPanel.style.display = '';
@@ -1234,7 +1234,6 @@ function renderFullNewsPanel(status) {
           <div class="news-card" data-title="${escHtml(item.title)}">
             <span class="news-card-source news-card-source--${item.source}">${NEWS_SOURCE_LABELS[item.source]?.label || item.source}</span>
             <div class="news-card-title">${escHtml(item.title)}</div>
-            ${item.titleKo ? `<div class="news-card-titleko">${escHtml(item.titleKo)}</div>` : ''}
             ${item.url ? `<a class="news-card-url" href="${escHtml(item.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escHtml(domain)}</a>` : ''}
             <div class="news-card-date">${escHtml(item.date)}</div>
             <button class="news-card-btn">이 소재로 포스트 생성 →</button>
