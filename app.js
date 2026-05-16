@@ -356,9 +356,7 @@ function addSlide() {
 }
 
 function removeCurrentSlide() {
-  const template = getTemplate(state.templateId);
-  const minSlides = template.defaultSlides || 1;
-  if (state.slides.length <= minSlides || state.slideIndex === 0) return;
+  if (state.slides.length <= 1 || state.slideIndex === 0) return;
   state.slides.splice(state.slideIndex, 1);
   state.slideIndex = Math.min(state.slideIndex, state.slides.length - 1);
   renderFilmstrip();
@@ -572,7 +570,7 @@ function renderEditor() {
   const visibleKeys = template.fieldsForSlide ? template.fieldsForSlide(state.slideIndex) : null;
   const visibleFields = visibleKeys ? template.fields.filter(f => visibleKeys.includes(f.key)) : template.fields;
 
-  const canRemove = state.slideIndex > 0 && state.slides.length > (template.defaultSlides || 1);
+  const canRemove = state.slideIndex > 0 && state.slides.length > 1;
   const slideInfo = `<div class="slide-info">
     <span>SLIDE ${state.slideIndex + 1} / ${state.slides.length}</span>
     ${canRemove ? `<button class="remove-slide-btn" id="removeSlideBtn">× 삭제</button>` : ''}

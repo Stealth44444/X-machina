@@ -48,6 +48,10 @@ body {
   padding: 20px 0 0;
 }
 
+#textStylePanel {
+  flex-shrink: 0;
+}
+
 #fields {
   flex: 1;
   min-height: 0;
@@ -64,12 +68,14 @@ body {
 .editor-panel .export-btn {
   margin: 6px 16px;
   width: calc(100% - 32px);
+  flex-shrink: 0;
 }
 
 .history-row {
   display: flex;
   gap: 6px;
   margin: 12px 16px 4px;
+  flex-shrink: 0;
 }
 
 .history-btn {
