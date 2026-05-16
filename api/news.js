@@ -148,8 +148,9 @@ async function fetchYoutube(apiKey) {
 }
 
 // ── Bing News RSS ────────────────────────────────────────────────────────
+// Bing RSS는 count 파라미터 미지원 — 쿼리만 조정
 async function fetchBingNews() {
-  const url = 'https://www.bing.com/news/search?q=%22gymshark%22&format=rss&count=30';
+  const url = 'https://www.bing.com/news/search?q=gymshark&format=rss';
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   });
@@ -173,9 +174,9 @@ async function fetchBingNews() {
 }
 
 // ── NewsAPI.org ───────────────────────────────────────────────────────────
+// searchIn=title 제거 → title+description+content 전체 검색, 결과 수 대폭 증가
 async function fetchNewsApi(apiKey) {
-  // searchIn=title 로 제목에 "gymshark" 포함된 기사만 → 무관한 결과 제거
-  const url = `https://newsapi.org/v2/everything?q=%22gymshark%22&searchIn=title&sortBy=publishedAt&language=en&pageSize=30&apiKey=${apiKey}`;
+  const url = `https://newsapi.org/v2/everything?q=%22gymshark%22&sortBy=publishedAt&language=en&pageSize=30&apiKey=${apiKey}`;
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   if (!res.ok) return [];
   const data = await res.json();
@@ -205,9 +206,11 @@ export default async function handler(req, res) {
       ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
     ]);
 
+    // Bing은 Google News와 같은 'news' 탭으로 통합 (결과 수가 적어 별도 탭 의미 없음)
+    const gnewsItems = gnews.status === 'fulfilled' ? gnews.value : [];
+    const bingItems  = (bing.status === 'fulfilled' ? bing.value : []).map(i => ({ ...i, source: 'news' }));
     const sourceResults = {
-      news:    gnews.status === 'fulfilled'   ? gnews.value   : [],
-      bing:    bing.status === 'fulfilled'    ? bing.value    : [],
+      news:    [...gnewsItems, ...bingItems],
       newsapi: newsapi.status === 'fulfilled' ? newsapi.value : [],
       blog:    blog.status === 'fulfilled'    ? blog.value    : [],
       youtube: youtube.status === 'fulfilled' ? youtube.value : [],
