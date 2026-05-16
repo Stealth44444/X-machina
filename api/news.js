@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       if (!title || pubMs < cutoff) continue;
       const date = new Date(pubMs).toISOString().slice(0, 10);
       items.push({ title, date });
-      if (items.length >= 8) break;
+      if (items.length >= 24) break;
     }
 
     res.status(200).json({ items });

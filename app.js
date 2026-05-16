@@ -933,11 +933,14 @@ async function runAiGenerate() {
         ],
         response_format: { type: 'json_object' },
         temperature: tone === 'info' ? 0.65 : 0.80,
-        max_tokens: 4000,
+        max_tokens: 10000,
       }),
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
     const data = await res.json();
+    if (data.choices[0].finish_reason === 'length') {
+      throw new Error('응답이 너무 길어 중간에 잘렸습니다. 슬라이드 수를 줄이거나 다시 시도해 주세요.');
+    }
     const parsed = JSON.parse(data.choices[0].message.content);
     aiPendingSlides = parsed.slides;
     renderAiPreview(aiPendingSlides, template);
@@ -1122,6 +1125,8 @@ function renderPresets() {
 
 const newsCache = { items: [], fetchedAt: 0 };
 const NEWS_CACHE_TTL = 30 * 60 * 1000;
+const NEWS_PER_PAGE = 8;
+let newsPage = 0;
 
 function setMode(mode) {
   state.appMode = mode;
@@ -1187,16 +1192,27 @@ function renderFullNewsPanel(status) {
   } else if (status === 'error' || !newsCache.items.length) {
     view.innerHTML = header + `<div class="news-view-empty">뉴스를 불러올 수 없습니다</div>`;
   } else {
+    const total = newsCache.items.length;
+    const totalPages = Math.ceil(total / NEWS_PER_PAGE);
+    newsPage = Math.min(newsPage, totalPages - 1);
+    const pageItems = newsCache.items.slice(newsPage * NEWS_PER_PAGE, (newsPage + 1) * NEWS_PER_PAGE);
+
     view.innerHTML = header + `
       <div class="news-cards-grid">
-        ${newsCache.items.map(item => `
+        ${pageItems.map(item => `
           <div class="news-card" data-title="${escHtml(item.title)}">
             <div class="news-card-title">${escHtml(item.title)}</div>
             <div class="news-card-date">${escHtml(item.date)}</div>
             <button class="news-card-btn">이 뉴스로 포스트 생성 →</button>
           </div>
         `).join('')}
-      </div>`;
+      </div>
+      ${totalPages > 1 ? `
+      <div class="news-pagination">
+        <button class="news-page-btn" id="newsPrevBtn" ${newsPage === 0 ? 'disabled' : ''}>← 이전</button>
+        <span class="news-page-info">${newsPage + 1} / ${totalPages}</span>
+        <button class="news-page-btn" id="newsNextBtn" ${newsPage >= totalPages - 1 ? 'disabled' : ''}>다음 →</button>
+      </div>` : ''}`;
     view.querySelectorAll('.news-card-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById('aiKeyword').value = btn.closest('.news-card').dataset.title;
@@ -1206,8 +1222,10 @@ function renderFullNewsPanel(status) {
     });
   }
 
-  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => fetchGymsharkNews(true));
+  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => { newsPage = 0; fetchGymsharkNews(true); });
   document.getElementById('newsBackBtn')?.addEventListener('click', () => setMode('edit'));
+  document.getElementById('newsPrevBtn')?.addEventListener('click', () => { newsPage--; renderFullNewsPanel(); });
+  document.getElementById('newsNextBtn')?.addEventListener('click', () => { newsPage++; renderFullNewsPanel(); });
 }
 
 function renderAiNewsPreview() {
