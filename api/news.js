@@ -149,7 +149,7 @@ async function fetchYoutube(apiKey) {
 
 // ── Bing News RSS ────────────────────────────────────────────────────────
 async function fetchBingNews() {
-  const url = 'https://www.bing.com/news/search?q=gymshark&format=rss';
+  const url = 'https://www.bing.com/news/search?q=%22gymshark%22&format=rss&count=30';
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   });
@@ -174,17 +174,16 @@ async function fetchBingNews() {
 
 // ── NewsAPI.org ───────────────────────────────────────────────────────────
 async function fetchNewsApi(apiKey) {
-  const url = `https://newsapi.org/v2/everything?q=gymshark&sortBy=publishedAt&language=en&pageSize=20&apiKey=${apiKey}`;
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-  });
+  // searchIn=title 로 제목에 "gymshark" 포함된 기사만 → 무관한 결과 제거
+  const url = `https://newsapi.org/v2/everything?q=%22gymshark%22&searchIn=title&sortBy=publishedAt&language=en&pageSize=30&apiKey=${apiKey}`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   if (!res.ok) return [];
   const data = await res.json();
   if (data.status !== 'ok') return [];
   const cut = cutoff();
   return (data.articles || []).flatMap(a => {
     const ms = new Date(a.publishedAt || 0).getTime();
-    if (!a.title || ms < cut) return [];
+    if (!a.title || a.title === '[Removed]' || ms < cut) return [];
     return [{ title: a.title.replace(/\s*-\s*[^-]{1,40}$/, '').trim(), date: msToDate(ms), source: 'newsapi', url: a.url || '', ms }];
   });
 }
