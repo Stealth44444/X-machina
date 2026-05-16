@@ -1039,10 +1039,7 @@ function openAiModal() {
   if (slideTargetToggle) {
     slideTargetToggle.checked = false;
     document.getElementById('aiSlideTargetField').style.display = 'none';
-    document.getElementById('aiCountField').style.display = '';
   }
-  const hasContent = state.slides.some(s => s.title);
-  document.getElementById('aiSlideTargetSection').style.display = hasContent ? '' : 'none';
   aiPendingSlides = null;
   aiConversationHistory = [];
   renderAiNewsPreview();
@@ -1167,66 +1164,7 @@ function renderAiSlideTargetPicker() {
   });
 }
 
-async function runAiSingleSlide(targetIdx) {
-  const keyword = document.getElementById('aiKeyword').value.trim();
-  if (!keyword) { document.getElementById('aiKeyword').focus(); return; }
-  const template = getTemplate(state.templateId);
-  const btn = document.getElementById('aiGenerate');
-  btn.disabled = true;
-  btn.textContent = '생성 중...';
-  const keys = (template.fieldsForSlide ? template.fieldsForSlide(targetIdx) : template.fields.map(f => f.key))
-    .filter(k => k !== 'bgImage');
-  const fieldDescs = keys.map(k => {
-    const def = template.fields.find(f => f.key === k);
-    return `- ${k}: ${def?.label || k}`;
-  }).join('\n');
-  const contextSlides = state.slides.map((s, i) => {
-    const vals = keys.map(k => `${k}: ${s[k] || ''}`).join(', ');
-    return `슬라이드 ${i + 1}: ${vals}`;
-  }).join('\n');
-  const systemMsg = `당신은 짐샤크(Gymshark) 한국 공식 인스타그램 @gymspire.kr의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.`;
-  const userMsg = `수정 요청: ${keyword}\n\n현재 카드뉴스 맥락:\n${contextSlides}\n\n슬라이드 ${targetIdx + 1}번만 재생성해주세요.\n\n필드 목록:\n${fieldDescs}\n\nJSON만 응답. { ${keys.map(k => `"${k}": "값"`).join(', ')} }`;
-  try {
-    const res = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemMsg },
-          { role: 'user', content: userMsg },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.80,
-        max_tokens: 2000,
-      }),
-    });
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
-    const data = await res.json();
-    const parsed = JSON.parse(data.choices[0].message.content);
-    const slideState = state.slides[targetIdx];
-    keys.forEach(k => { if (parsed[k] !== undefined) slideState[k] = parsed[k]; });
-    renderCanvas();
-    renderFilmstrip();
-    renderEditor();
-    pushHistory();
-    document.getElementById('aiModal').style.display = 'none';
-  } catch (err) {
-    alert(`재생성 실패: ${err.message}`);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '수정하기';
-  }
-}
-
 async function runAiGenerate() {
-  const slideTargetToggle = document.getElementById('aiSlideTargetToggle');
-  if (slideTargetToggle?.checked) {
-    const activeBtn = document.getElementById('aiSlideTargetPicker')?.querySelector('.ai-count-btn.active');
-    const targetIdx = activeBtn ? parseInt(activeBtn.dataset.slideIdx) : 0;
-    await runAiSingleSlide(targetIdx);
-    return;
-  }
   const keyword = document.getElementById('aiKeyword').value.trim();
   if (!keyword) { document.getElementById('aiKeyword').focus(); return; }
 
@@ -1285,9 +1223,65 @@ async function runAiGenerate() {
   }
 }
 
+async function runAiFeedbackSingleSlide(targetIdx, hint) {
+  const template = getTemplate(state.templateId);
+  const feedbackBtn = document.getElementById('aiFeedbackBtn');
+  feedbackBtn.disabled = true;
+  feedbackBtn.textContent = '수정 중...';
+  const keys = (template.fieldsForSlide ? template.fieldsForSlide(targetIdx) : template.fields.map(f => f.key))
+    .filter(k => k !== 'bgImage');
+  const fieldDescs = keys.map(k => {
+    const def = template.fields.find(f => f.key === k);
+    return `- ${k}: ${def?.label || k}`;
+  }).join('\n');
+  const slides = aiPendingSlides || state.slides;
+  const contextSlides = slides.map((s, i) => {
+    const vals = keys.map(k => `${k}: ${s[k] || ''}`).join(', ');
+    return `슬라이드 ${i + 1}: ${vals}`;
+  }).join('\n');
+  const systemMsg = `당신은 짐샤크(Gymshark) 한국 공식 인스타그램 @gymspire.kr의 SNS 콘텐츠 전문가입니다.`;
+  const userMsg = `수정 요청: ${hint}\n\n현재 카드뉴스 맥락:\n${contextSlides}\n\n슬라이드 ${targetIdx + 1}번만 재생성해주세요.\n\n필드 목록:\n${fieldDescs}\n\nJSON만 응답. { ${keys.map(k => `"${k}": "값"`).join(', ')} }`;
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemMsg },
+          { role: 'user', content: userMsg },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.80,
+        max_tokens: 2000,
+      }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    if (!aiPendingSlides) aiPendingSlides = slides.map(s => ({ ...s }));
+    keys.forEach(k => { if (parsed[k] !== undefined) aiPendingSlides[targetIdx][k] = parsed[k]; });
+    renderAiPreview(aiPendingSlides, template);
+    document.getElementById('aiFeedback').value = '';
+  } catch (err) {
+    alert(`수정 실패: ${err.message}`);
+  } finally {
+    feedbackBtn.disabled = false;
+    feedbackBtn.textContent = '수정하기';
+  }
+}
+
 async function runAiFeedback() {
   const feedback = document.getElementById('aiFeedback').value.trim();
-  if (!feedback || !aiConversationHistory.length) return;
+  if (!feedback) return;
+  const slideTargetToggle = document.getElementById('aiSlideTargetToggle');
+  if (slideTargetToggle?.checked) {
+    const activeBtn = document.getElementById('aiSlideTargetPicker')?.querySelector('.ai-count-btn.active');
+    const targetIdx = activeBtn ? parseInt(activeBtn.dataset.slideIdx) : 0;
+    await runAiFeedbackSingleSlide(targetIdx, feedback);
+    return;
+  }
+  if (!aiConversationHistory.length) return;
   const template = getTemplate(state.templateId);
   const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
   const feedbackBtn = document.getElementById('aiFeedbackBtn');
@@ -1427,10 +1421,7 @@ function initAiModal() {
   const slideTargetToggle = document.getElementById('aiSlideTargetToggle');
   if (slideTargetToggle) {
     slideTargetToggle.addEventListener('change', () => {
-      const on = slideTargetToggle.checked;
-      document.getElementById('aiSlideTargetField').style.display = on ? '' : 'none';
-      document.getElementById('aiCountField').style.display = on ? 'none' : '';
-      document.getElementById('aiGenerate').textContent = on ? '수정하기' : (aiPendingSlides ? '다시 생성' : '생성하기');
+      document.getElementById('aiSlideTargetField').style.display = slideTargetToggle.checked ? '' : 'none';
     });
   }
 }
