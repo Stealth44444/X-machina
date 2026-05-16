@@ -111,6 +111,9 @@ body {
 .sidebar-brand {
   padding: 24px 20px 16px;
   border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .brand-name {
@@ -789,7 +792,7 @@ body {
 .ai-speech-btn:hover, .ai-target-btn:hover { border-color: #444; color: #aaa; }
 .ai-speech-btn.active, .ai-target-btn.active { border-color: #2B9BF4; color: #2B9BF4; background: rgba(43,155,244,0.07); }
 .ai-result-header { padding-top: 20px; border-top: 1px solid #222; margin-bottom: 12px; }
-.ai-result-list { max-height: 200px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+.ai-result-list { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
 
 .ai-slide-target-row {
   padding: 10px 0;
@@ -1585,4 +1588,244 @@ body {
   border-radius: 3px;
   cursor: pointer;
   flex-shrink: 0;
+}
+/* ── Background dim slider ──────────────────────────────────────────────── */
+.field-dim-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.field-dim-val {
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Text style apply-all ────────────────────────────────────────────────── */
+.ts-apply-all-btn {
+  width: 100%;
+  padding: 7px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #555;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ts-apply-all-btn:hover {
+  border-color: #2B9BF4;
+  color: #2B9BF4;
+}
+
+/* ── AI card preview ─────────────────────────────────────────────────────── */
+.ai-card-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-card-wrap {
+  width: 108px;
+  height: 135px;
+  overflow: hidden;
+  border: 1.5px solid #2a2a2a;
+  border-radius: 4px;
+  background: #000;
+  position: relative;
+}
+
+.ai-card-inner {
+  width: 1080px;
+  height: 1350px;
+  transform: scale(0.1);
+  transform-origin: top left;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #111;
+  font-family: 'Pretendard Variable', Pretendard, sans-serif;
+}
+
+.ai-card-label {
+  font-size: 10px;
+  color: #444;
+  letter-spacing: 0.5px;
+}
+
+/* ── AI generation history nav ───────────────────────────────────────────── */
+.ai-history-nav {
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #1a1a1a;
+  margin-top: 8px;
+}
+
+.ai-hist-btn {
+  background: none;
+  border: 1px solid #252525;
+  border-radius: 4px;
+  color: #555;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ai-hist-btn:not(:disabled):hover {
+  border-color: #555;
+  color: #ccc;
+}
+
+.ai-hist-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.ai-hist-info {
+  font-size: 11px;
+  color: #444;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ── Project switch button ───────────────────────────────────────────────── */
+.project-switch-btn {
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.project-switch-btn:hover {
+  color: #777;
+}
+
+/* ── Project selection screen ────────────────────────────────────────────── */
+.project-screen {
+  position: fixed;
+  inset: 0;
+  background: #080808;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.project-screen-inner {
+  width: 100%;
+  max-width: 640px;
+  padding: 80px 40px 60px;
+}
+
+.project-screen-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #2B9BF4;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.project-screen-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #e8e8e8;
+  letter-spacing: -0.4px;
+  margin: 0 0 8px;
+}
+
+.project-screen-sub {
+  font-size: 12px;
+  color: #333;
+  margin: 0 0 40px;
+  line-height: 1.6;
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.project-card {
+  background: #0f0f0f;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  padding: 22px 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 96px;
+  font-family: inherit;
+}
+
+.project-card:hover,
+.project-card.active {
+  border-color: #2B9BF4;
+  background: #0a1929;
+}
+
+.project-card--new {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: inherit;
+}
+
+.project-card-plus {
+  font-size: 22px;
+  color: #333;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.project-card--new:hover .project-card-plus {
+  color: #2B9BF4;
+}
+
+.project-card-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ccc;
+  letter-spacing: 1px;
+}
+
+.project-card-desc {
+  font-size: 11px;
+  color: #444;
+  line-height: 1.5;
+}
+
+.project-card-tag {
+  font-size: 9px;
+  color: #2B9BF4;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-top: 2px;
 }

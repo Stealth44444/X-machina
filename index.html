@@ -10,12 +10,8 @@
   <div class="app">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <span class="brand-name">GYMSPIRE</span>
-        <span class="brand-sub">Template Tool</span>
-      </div>
-      <div class="sidebar-section">
-        <p class="section-label">TEMPLATE</p>
-        <div id="templateList"></div>
+        <span class="brand-name" id="brandName">GYMSPIRE</span>
+        <button class="project-switch-btn" id="projectSwitchBtn" title="프로젝트 변경">⊞</button>
       </div>
       <div class="sidebar-section sidebar-nav">
         <button class="sidebar-news-btn" id="newsModeBtn">
@@ -66,6 +62,8 @@
       <button class="export-btn" id="exportBtn" style="margin-top:0;">↓  PNG 내보내기</button>
     </aside>
   </div>
+
+  <div id="projectScreen" class="project-screen" style="display:none"></div>
 
   <div id="slideRegenModal" class="ai-overlay" style="display:none">
     <div class="ai-panel slide-regen-panel">
@@ -212,9 +210,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="templates/cardnews.js"></script>
-  <script src="templates/motivation.js"></script>
-  <script src="templates/product.js"></script>
-  <script src="templates/promo.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

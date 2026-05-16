@@ -1,3 +1,8 @@
+const AUTOSAVE_KEY = 'brand_tool_autosave';
+const PROJECT_STORAGE_KEY = 'brand_tool_projects';
+const ACTIVE_PROJECT_KEY = 'brand_tool_active_project';
+const PRESET_KEY_PREFIX = 'brand_tool_presets_';
+
 const state = {
   templateId: 'cardnews',
   slideIndex: 0,
@@ -9,7 +14,42 @@ const state = {
   activePresetId: null,
   appMode: 'edit',
   canvasH: 1350,
+  projectId: 'gymspire',
 };
+
+let autoSaveTimer = null;
+
+function saveAutoSave() {
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({
+      projectId: state.projectId,
+      templateId: state.templateId,
+      slides: state.slides,
+      slideIndex: state.slideIndex,
+      outroImage: state.outroImage,
+      outroPosX: state.outroPosX,
+      outroPosY: state.outroPosY,
+      savedAt: Date.now(),
+    }));
+  } catch {}
+}
+
+function loadAutoSave() {
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data.projectId !== state.projectId) return false;
+    if (!getTemplate(data.templateId)) return false;
+    state.templateId = data.templateId;
+    state.slides = data.slides;
+    state.slideIndex = data.slideIndex ?? 0;
+    state.outroImage = data.outroImage || '';
+    state.outroPosX = data.outroPosX ?? 50;
+    state.outroPosY = data.outroPosY ?? 50;
+    return true;
+  } catch { return false; }
+}
 
 function getTemplate(id) {
   return window.GYMSPIRE_TEMPLATES.find(t => t.id === id);
@@ -59,7 +99,8 @@ function buildBgHtml(s) {
       </div>
     </div>`;
   const pos = `${s.bgPosX ?? 50}% ${s.bgPosY ?? 50}%`;
-  return `<div class="bg-layer" style="position:absolute;inset:0;background-image:url(${img});background-size:cover;background-position:${pos};"></div>`;
+  const dim = s.bgDim ?? 0;
+  return `<div class="bg-layer" style="position:absolute;inset:0;background-image:url(${img});background-size:cover;background-position:${pos};"></div>${dim > 0 ? `<div class="bg-dim-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,${(dim / 100).toFixed(2)});pointer-events:none;"></div>` : ''}`;
 }
 
 function applyDragOffsets(container, slideState) {
@@ -173,7 +214,6 @@ function init() {
   window.addEventListener('resize', scaleCanvas);
   renderGallery();
   renderPinterest();
-  loadTemplate('cardnews');
   document.getElementById('exportBtn').addEventListener('click', exportPng);
   document.getElementById('exportAllBtn').addEventListener('click', exportAllPng);
   document.getElementById('savePresetBtn').addEventListener('click', savePreset);
@@ -185,7 +225,6 @@ function init() {
     if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
   });
   initAiModal();
-  renderPresets();
   fetchGymsharkNews();
   document.getElementById('newsModeBtn').addEventListener('click', () => {
     setMode(state.appMode === 'news' ? 'edit' : 'news');
@@ -199,7 +238,6 @@ function init() {
   });
   initRatioBtns();
   initSlideRegen();
-
   document.addEventListener('pointerdown', e => {
     if (!state.selectedDragKey) return;
     if (e.target.closest('[data-drag-key]') || e.target.closest('#textStylePanel')) return;
@@ -208,6 +246,25 @@ function init() {
     renderTextStylePanel();
     applyTextStyles(document.getElementById('canvas'), slideState, true);
   });
+
+  const hasProject = initProjectSystem();
+  if (hasProject) {
+    if (!loadAutoSave()) {
+      loadTemplate('cardnews');
+    } else {
+      renderGallery();
+      renderFilmstrip();
+      renderEditor();
+      renderCanvas();
+      history.stack = [snapshotState()];
+      history.index = 0;
+      updateHistoryBtns();
+    }
+    renderPresets();
+  } else {
+    loadTemplate('cardnews');
+    showProjectScreen();
+  }
 }
 
 function initRatioBtns() {
@@ -278,7 +335,7 @@ async function runSlideRegen() {
     return `슬라이드 ${i + 1}: ${vals}`;
   }).join('\n');
 
-  const systemMsg = `당신은 짐샤크(Gymshark) 한국 공식 인스타그램 @gymspire.kr의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.`;
+  const systemMsg = getProjectSystemMsg();
   const userMsg = `현재 카드뉴스의 전체 맥락:\n${contextSlides}\n\n슬라이드 ${idx + 1}번만 재생성해주세요.\n\n필드 목록:\n${fieldDescs}\n\n${hint ? `수정 방향: ${hint}\n\n` : ''}JSON만 응답. { ${keys.map(k => `"${k}": "값"`).join(', ')} }`;
 
   try {
@@ -316,17 +373,7 @@ async function runSlideRegen() {
 
 // ── Task 3: Template Gallery + State ────────────────────────────────────────
 
-function renderGallery() {
-  const list = document.getElementById('templateList');
-  list.innerHTML = window.GYMSPIRE_TEMPLATES.map(t => `
-    <button class="template-item ${t.id === state.templateId ? 'active' : ''}" data-id="${t.id}">
-      ${t.name}
-    </button>
-  `).join('');
-  list.querySelectorAll('.template-item').forEach(btn => {
-    btn.addEventListener('click', () => loadTemplate(btn.dataset.id));
-  });
-}
+function renderGallery() {}
 
 function loadTemplate(id) {
   const template = getTemplate(id);
@@ -643,7 +690,26 @@ function renderEditor() {
     if (el.classList.contains('field-image-btn')) return;
     const evt = el.type === 'checkbox' ? 'change' : 'input';
     el.addEventListener(evt, () => {
-      updateField(key, el.type === 'checkbox' ? el.checked : el.value);
+      const raw = el.type === 'checkbox' ? el.checked : el.value;
+      const value = el.type === 'range' ? parseInt(raw) : raw;
+      updateField(key, value);
+      if (el.type === 'range' && key === 'bgDim') {
+        const valEl = el.closest('.field-dim-row')?.querySelector('.field-dim-val');
+        if (valEl) valEl.textContent = value === 0 ? '없음' : value + '%';
+        const overlay = document.querySelector('#canvas .bg-dim-overlay');
+        if (value > 0) {
+          if (overlay) overlay.style.background = `rgba(0,0,0,${(value / 100).toFixed(2)})`;
+          else {
+            const bgLayer = document.querySelector('#canvas .bg-layer');
+            if (bgLayer) {
+              const d = document.createElement('div');
+              d.className = 'bg-dim-overlay';
+              d.style.cssText = `position:absolute;inset:0;background:rgba(0,0,0,${(value / 100).toFixed(2)});pointer-events:none;`;
+              bgLayer.insertAdjacentElement('afterend', d);
+            }
+          }
+        } else if (overlay) overlay.remove();
+      }
     });
   });
 
@@ -735,6 +801,9 @@ function renderTextStylePanel() {
         <button class="ts-step-btn ts-reset-btn" id="colorReset">↺</button>
       </div>
     </div>
+    <div class="ts-row" style="padding-top:10px;border-top:1px solid #1e1e1e;margin-top:2px;">
+      <button class="ts-apply-all-btn" id="tsApplyAllBtn">전체 슬라이드에 적용</button>
+    </div>
   `;
 
   document.getElementById('textStyleClose').addEventListener('click', () => {
@@ -795,6 +864,19 @@ function renderTextStylePanel() {
     renderFilmstrip();
     pushHistoryDebounced();
   });
+
+  document.getElementById('tsApplyAllBtn').addEventListener('click', () => {
+    const src = state.slides[state.slideIndex];
+    ['_opacity_', '_size_', '_color_'].forEach(prefix => {
+      const k = prefix + key;
+      state.slides.forEach((s, i) => {
+        if (i === state.slideIndex) return;
+        if (src[k] !== undefined) s[k] = src[k]; else delete s[k];
+      });
+    });
+    renderFilmstrip();
+    pushHistory();
+  });
 }
 
 function renderField(field, value, slideState) {
@@ -816,14 +898,21 @@ function renderField(field, value, slideState) {
       </div>`;
     case 'image': {
       const px = slideState?.bgPosX ?? 50, py = slideState?.bgPosY ?? 50;
+      const dim = slideState?.bgDim ?? 0;
       const picker = value ? `<div class="pos-picker"><div class="pos-handle" style="left:${px}%;top:${py}%"></div></div>` : '';
       const applyAllBtn = value ? `<button class="field-apply-all-btn" data-key="${field.key}">전체 슬라이드 적용</button>` : '';
+      const dimSlider = value ? `<div class="field-dim-row">
+        <label class="field-label" style="margin:0;flex-shrink:0">어둡기</label>
+        <input type="range" class="text-style-range" data-key="bgDim" min="0" max="80" value="${dim}">
+        <span class="field-dim-val">${dim === 0 ? '없음' : dim + '%'}</span>
+      </div>` : '';
       return `<div class="field-group">
         <label class="field-label">${field.label}</label>
         <button class="field-image-btn ${value ? 'has-image' : ''}" data-key="${field.key}">
           ${value ? '✓ 이미지 선택됨' : '+ 이미지 업로드'}
         </button>
         ${applyAllBtn}
+        ${dimSlider}
         ${picker}
       </div>`;
     }
@@ -867,6 +956,8 @@ function pushHistory() {
   if (history.stack.length > 60) history.stack.shift();
   else history.index++;
   updateHistoryBtns();
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveAutoSave, 800);
 }
 
 function pushHistoryDebounced() {
@@ -1024,8 +1115,205 @@ const GYMSHARK_BRAND_KNOWLEDGE = `
 - 한국 공식 리셀러. 진품 보장 + 국내 직배송
 - 짐샤크 글로벌 컬처와 한국 피트니스 커뮤니티를 연결하는 허브`;
 
+// ── Project System ─────────────────────────────────────────────────────────
+
+const BUILT_IN_PROJECTS = [
+  {
+    id: 'gymspire',
+    name: 'GYMSPIRE',
+    description: 'Gymshark 한국 공식 리셀러. 짐샤크 브랜드·선수·제품 전문 콘텐츠.',
+    builtIn: true,
+  },
+];
+
+function getCustomProjects() {
+  try { return JSON.parse(localStorage.getItem(PROJECT_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+function saveCustomProjects(projects) {
+  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+}
+
+function getAllProjects() {
+  return [...BUILT_IN_PROJECTS, ...getCustomProjects()];
+}
+
+function getCurrentProject() {
+  return getAllProjects().find(p => p.id === state.projectId) || BUILT_IN_PROJECTS[0];
+}
+
+function getProjectContext() {
+  const project = getCurrentProject();
+  if (project.id === 'gymspire') return GYMSHARK_BRAND_KNOWLEDGE;
+  return `\n## 브랜드 컨텍스트\n${project.description || ''}`;
+}
+
+function getProjectSystemMsg() {
+  const project = getCurrentProject();
+  if (project.id === 'gymspire') {
+    return '당신은 짐샤크(Gymshark) 한국 공식 인스타그램 @gymspire.kr의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.';
+  }
+  return `당신은 ${project.name}의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.${project.description ? '\n\n브랜드 컨텍스트:\n' + project.description : ''}`;
+}
+
+function showProjectScreen() {
+  renderProjectScreen();
+  document.getElementById('projectScreen').style.display = 'flex';
+}
+
+function hideProjectScreen() {
+  document.getElementById('projectScreen').style.display = 'none';
+}
+
+function renderProjectScreen() {
+  const projects = getAllProjects();
+  const screen = document.getElementById('projectScreen');
+  screen.innerHTML = `
+    <div class="project-screen-inner">
+      <span class="project-screen-eyebrow">WORKSPACE</span>
+      <h1 class="project-screen-title">프로젝트 선택</h1>
+      <p class="project-screen-sub">각 프로젝트는 독립된 작업 이력과 AI 컨텍스트를 가집니다.</p>
+      <div class="project-grid">
+        ${projects.map(p => `
+          <button class="project-card${p.id === state.projectId ? ' active' : ''}" data-id="${escHtml(p.id)}">
+            <span class="project-card-name">${escHtml(p.name)}</span>
+            <span class="project-card-desc">${escHtml(p.description)}</span>
+            ${p.builtIn ? '<span class="project-card-tag">기본 제공</span>' : ''}
+          </button>
+        `).join('')}
+        <button class="project-card project-card--new" id="newProjectCardBtn">
+          <span class="project-card-plus">+</span>
+          <span class="project-card-name">새 프로젝트</span>
+          <span class="project-card-desc">커스텀 브랜드 또는 개인 계정</span>
+        </button>
+      </div>
+    </div>
+  `;
+  screen.querySelectorAll('.project-card[data-id]').forEach(card => {
+    card.addEventListener('click', () => loadProject(card.dataset.id));
+  });
+  document.getElementById('newProjectCardBtn').addEventListener('click', showNewProjectModal);
+}
+
+function loadProject(projectId) {
+  const project = getAllProjects().find(p => p.id === projectId);
+  if (!project) return;
+  state.projectId = projectId;
+  localStorage.setItem(ACTIVE_PROJECT_KEY, projectId);
+  document.getElementById('brandName').textContent = project.name;
+  if (!loadAutoSave()) {
+    loadTemplate('cardnews');
+  } else {
+    renderGallery();
+    renderFilmstrip();
+    renderEditor();
+    renderCanvas();
+    history.stack = [snapshotState()];
+    history.index = 0;
+    updateHistoryBtns();
+  }
+  renderPresets();
+  hideProjectScreen();
+}
+
+function showNewProjectModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.zIndex = '3000';
+  overlay.innerHTML = `
+    <div class="modal">
+      <p class="modal-title">NEW PROJECT</p>
+      <input class="modal-input" id="newProjectName" type="text" placeholder="프로젝트 이름 (예: FITCORE)" maxlength="24">
+      <textarea class="modal-input" id="newProjectDesc" placeholder="브랜드 설명 — AI 생성 시 참고합니다" style="min-height:72px;resize:vertical;margin-top:-8px;"></textarea>
+      <div class="modal-actions">
+        <button class="modal-btn modal-cancel" id="newProjectCancel">취소</button>
+        <button class="modal-btn modal-confirm" id="newProjectConfirm">만들기</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#newProjectName').focus();
+  overlay.querySelector('#newProjectCancel').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#newProjectConfirm').addEventListener('click', () => {
+    const name = overlay.querySelector('#newProjectName').value.trim();
+    const desc = overlay.querySelector('#newProjectDesc').value.trim();
+    if (!name) { overlay.querySelector('#newProjectName').focus(); return; }
+    const custom = getCustomProjects();
+    const id = 'custom_' + Date.now();
+    custom.push({ id, name: name.toUpperCase(), description: desc || '커스텀 프로젝트', builtIn: false });
+    saveCustomProjects(custom);
+    overlay.remove();
+    renderProjectScreen();
+  });
+}
+
+function initProjectSystem() {
+  const oldPresets = localStorage.getItem('gymspire_presets');
+  if (oldPresets && !localStorage.getItem(PRESET_KEY_PREFIX + 'gymspire')) {
+    localStorage.setItem(PRESET_KEY_PREFIX + 'gymspire', oldPresets);
+  }
+  document.getElementById('projectSwitchBtn').addEventListener('click', showProjectScreen);
+  const savedId = localStorage.getItem(ACTIVE_PROJECT_KEY);
+  if (savedId && getAllProjects().some(p => p.id === savedId)) {
+    state.projectId = savedId;
+    const project = getAllProjects().find(p => p.id === savedId);
+    document.getElementById('brandName').textContent = project.name;
+    return true;
+  }
+  return false;
+}
+
 let aiPendingSlides = null;
 let aiConversationHistory = [];
+let aiGenerationHistory = [];
+let aiHistoryIdx = -1;
+
+function pushAiHistory(slides) {
+  if (!slides) return;
+  aiGenerationHistory = aiGenerationHistory.slice(0, aiHistoryIdx + 1);
+  aiGenerationHistory.push(JSON.parse(JSON.stringify(slides)));
+  aiHistoryIdx = aiGenerationHistory.length - 1;
+  renderAiHistoryNav();
+}
+
+function renderAiHistoryNav() {
+  let nav = document.getElementById('aiHistoryNav');
+  const resultWrap = document.getElementById('aiResultWrap');
+  if (!resultWrap) return;
+  if (!nav) {
+    nav = document.createElement('div');
+    nav.id = 'aiHistoryNav';
+    nav.className = 'ai-history-nav';
+    const feedbackRow = resultWrap.querySelector('.ai-feedback-row');
+    if (feedbackRow) feedbackRow.parentNode.insertBefore(nav, feedbackRow);
+    else resultWrap.appendChild(nav);
+  }
+  const total = aiGenerationHistory.length;
+  if (total <= 1) { nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+  nav.innerHTML = `
+    <button class="ai-hist-btn" id="aiHistPrev" ${aiHistoryIdx <= 0 ? 'disabled' : ''}>← 이전</button>
+    <span class="ai-hist-info">${aiHistoryIdx + 1} / ${total}</span>
+    <button class="ai-hist-btn" id="aiHistNext" ${aiHistoryIdx >= total - 1 ? 'disabled' : ''}>다음 →</button>
+  `;
+  document.getElementById('aiHistPrev')?.addEventListener('click', () => {
+    if (aiHistoryIdx > 0) {
+      aiHistoryIdx--;
+      aiPendingSlides = JSON.parse(JSON.stringify(aiGenerationHistory[aiHistoryIdx]));
+      renderAiPreview(aiPendingSlides, getTemplate(state.templateId));
+      renderAiHistoryNav();
+    }
+  });
+  document.getElementById('aiHistNext')?.addEventListener('click', () => {
+    if (aiHistoryIdx < aiGenerationHistory.length - 1) {
+      aiHistoryIdx++;
+      aiPendingSlides = JSON.parse(JSON.stringify(aiGenerationHistory[aiHistoryIdx]));
+      renderAiPreview(aiPendingSlides, getTemplate(state.templateId));
+      renderAiHistoryNav();
+    }
+  });
+}
 
 function openAiModal() {
   const modal = document.getElementById('aiModal');
@@ -1042,6 +1330,10 @@ function openAiModal() {
   }
   aiPendingSlides = null;
   aiConversationHistory = [];
+  aiGenerationHistory = [];
+  aiHistoryIdx = -1;
+  const histNav = document.getElementById('aiHistoryNav');
+  if (histNav) histNav.style.display = 'none';
   renderAiNewsPreview();
   renderAiSlideTargetPicker();
   setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
@@ -1061,7 +1353,7 @@ function buildAiPrompt(template, keyword, tone, slideCount, speech, target, news
 
   const systemMsg = `당신은 한국 Gymshark 공식 리셀러 @gymspire.kr의 수석 카피라이터입니다.
 팔로워 1만 명 이상의 프리미엄 피트니스 라이프스타일 계정으로, 실제 마케팅 현장에 즉시 사용 가능한 수준의 콘텐츠를 생산합니다.
-${GYMSHARK_BRAND_KNOWLEDGE}
+${getProjectContext()}
 
 ## 계정 DNA
 - 포지셔닝: 국내 유일 Gymshark 전문 리셀러 — 제품·피트니스 문화·라이프스타일을 아우름
@@ -1210,6 +1502,7 @@ async function runAiGenerate() {
     aiConversationHistory.push({ role: 'assistant', content: rawContent });
     const parsed = JSON.parse(rawContent);
     aiPendingSlides = parsed.slides;
+    pushAiHistory(aiPendingSlides);
     renderAiPreview(aiPendingSlides, template);
     document.getElementById('aiResultWrap').style.display = '';
     document.getElementById('aiApplyBtn').style.display = '';
@@ -1239,7 +1532,7 @@ async function runAiFeedbackSingleSlide(targetIdx, hint) {
     const vals = keys.map(k => `${k}: ${s[k] || ''}`).join(', ');
     return `슬라이드 ${i + 1}: ${vals}`;
   }).join('\n');
-  const systemMsg = `당신은 짐샤크(Gymshark) 한국 공식 인스타그램 @gymspire.kr의 SNS 콘텐츠 전문가입니다.`;
+  const systemMsg = getProjectSystemMsg();
   const userMsg = `수정 요청: ${hint}\n\n현재 카드뉴스 맥락:\n${contextSlides}\n\n슬라이드 ${targetIdx + 1}번만 재생성해주세요.\n\n필드 목록:\n${fieldDescs}\n\nJSON만 응답. { ${keys.map(k => `"${k}": "값"`).join(', ')} }`;
   try {
     const res = await fetch('/api/generate', {
@@ -1261,6 +1554,7 @@ async function runAiFeedbackSingleSlide(targetIdx, hint) {
     const parsed = JSON.parse(data.choices[0].message.content);
     if (!aiPendingSlides) aiPendingSlides = slides.map(s => ({ ...s }));
     keys.forEach(k => { if (parsed[k] !== undefined) aiPendingSlides[targetIdx][k] = parsed[k]; });
+    pushAiHistory(aiPendingSlides);
     renderAiPreview(aiPendingSlides, template);
     document.getElementById('aiFeedback').value = '';
   } catch (err) {
@@ -1310,6 +1604,7 @@ async function runAiFeedback() {
     aiConversationHistory.push({ role: 'assistant', content: rawContent });
     const parsed = JSON.parse(rawContent);
     aiPendingSlides = parsed.slides;
+    pushAiHistory(aiPendingSlides);
     renderAiPreview(aiPendingSlides, template);
     document.getElementById('aiFeedback').value = '';
   } catch (err) {
@@ -1325,14 +1620,11 @@ async function runAiFeedback() {
 function renderAiPreview(slides, template) {
   const el = document.getElementById('aiResultContent');
   el.innerHTML = slides.map((slide, i) => {
-    const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
-      .filter(k => k !== 'bgImage');
-    const rows = keys.map(k => {
-      const def = template.fields.find(f => f.key === k);
-      const val = escHtml(String(slide[k] || ''));
-      return `<div class="ai-slide-field"><strong>${def?.label || k}:</strong> ${val}</div>`;
-    }).join('');
-    return `<div class="ai-slide-preview"><div class="ai-slide-num">SLIDE ${i + 1}</div>${rows}</div>`;
+    const content = template.render(slide, i, slides.length);
+    return `<div class="ai-card-item">
+      <div class="ai-card-wrap"><div class="ai-card-inner">${content}</div></div>
+      <span class="ai-card-label">${i + 1}</span>
+    </div>`;
   }).join('');
 }
 
@@ -1429,7 +1721,7 @@ function initAiModal() {
 // ── Presets ──────────────────────────────────────────────────────────────────
 
 function getPresets() {
-  try { return JSON.parse(localStorage.getItem('gymspire_presets') || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(PRESET_KEY_PREFIX + state.projectId) || '[]'); } catch { return []; }
 }
 
 function savePreset(nameOverride) {
@@ -1449,7 +1741,7 @@ function savePreset(nameOverride) {
     outroPosY: state.outroPosY,
   });
   try {
-    localStorage.setItem('gymspire_presets', JSON.stringify(presets));
+    localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets));
   } catch {
     alert('저장 공간 부족. 이미지를 줄이거나 오래된 프리셋을 삭제하세요.');
     return;
@@ -1477,7 +1769,7 @@ function loadPreset(id) {
 function deletePreset(id) {
   if (!confirm('삭제할까요?')) return;
   const presets = getPresets().filter(p => p.id !== id);
-  localStorage.setItem('gymspire_presets', JSON.stringify(presets));
+  localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets));
   renderPresets();
 }
 
