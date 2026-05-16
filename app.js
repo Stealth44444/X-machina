@@ -393,14 +393,16 @@ function renderFilmstrip() {
   filmstrip.innerHTML = state.slides.map((slideState, i) => {
     return `
       <div class="filmstrip-item ${i === state.slideIndex ? 'active' : ''}" data-index="${i}" draggable="true">
-        <div class="filmstrip-preview-wrap">
-          <div class="filmstrip-preview">
-            ${buildBgHtml(slideState)}
-            ${template.render(slideState, i, state.slides.length)}
+        <div class="filmstrip-thumb">
+          <div class="filmstrip-preview-wrap">
+            <div class="filmstrip-preview">
+              ${buildBgHtml(slideState)}
+              ${template.render(slideState, i, state.slides.length)}
+            </div>
           </div>
+          <button class="filmstrip-regen-btn" data-index="${i}" title="이 슬라이드 재생성">↻</button>
         </div>
         <span class="filmstrip-num">${i + 1}</span>
-        <button class="filmstrip-regen-btn" data-index="${i}" title="이 슬라이드 재생성">↻</button>
       </div>
     `;
   }).join('')
