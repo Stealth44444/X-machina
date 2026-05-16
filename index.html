@@ -37,6 +37,13 @@
     </aside>
 
     <main class="canvas-area">
+      <div class="canvas-toolbar">
+        <div class="ratio-btns">
+          <button class="ratio-btn" data-h="1080">1:1</button>
+          <button class="ratio-btn active" data-h="1350">4:5</button>
+          <button class="ratio-btn" data-h="1920">9:16</button>
+        </div>
+      </div>
       <div class="canvas-wrapper">
         <div class="canvas" id="canvas"></div>
       </div>
@@ -58,6 +65,32 @@
       <button class="export-btn" id="exportAllBtn">↓ 전체 내보내기</button>
       <button class="export-btn" id="exportBtn" style="margin-top:0;">↓  PNG 내보내기</button>
     </aside>
+  </div>
+
+  <div id="slideRegenModal" class="ai-overlay" style="display:none">
+    <div class="ai-panel slide-regen-panel">
+      <div class="ai-panel-header">
+        <div class="ai-panel-header-row">
+          <div>
+            <span class="ai-panel-eyebrow">↻ REGENERATE</span>
+            <h2 class="ai-panel-title" id="slideRegenTitle">슬라이드 재생성</h2>
+          </div>
+          <button class="ai-btn ai-btn-ghost" id="slideRegenClose">닫기</button>
+        </div>
+      </div>
+      <div class="ai-body">
+        <div class="ai-field">
+          <label class="ai-label">수정 방향 (선택사항)</label>
+          <textarea class="ai-input ai-textarea" id="slideRegenHint" placeholder="예: 더 강렬한 CTA로 / 제목 간결하게 / 본문에 제품 가격 추가"></textarea>
+        </div>
+      </div>
+      <div class="ai-actions">
+        <span class="ai-hint">Ctrl+Enter로 실행</span>
+        <div class="ai-actions-right">
+          <button class="ai-btn ai-btn-primary" id="slideRegenBtn">재생성</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="aiModal" class="ai-overlay" style="display:none">
@@ -143,6 +176,10 @@
               <span class="ai-label">생성 결과</span>
             </div>
             <div id="aiResultContent" class="ai-result-list"></div>
+            <div class="ai-feedback-row">
+              <textarea class="ai-input ai-feedback-input" id="aiFeedback" placeholder="수정 요청 (예: 더 짧게 / 제목 임팩트 있게 / 본문에 가격 정보 추가)"></textarea>
+              <button class="ai-btn ai-btn-ghost" id="aiFeedbackBtn">수정하기</button>
+            </div>
           </div>
 
         </div>

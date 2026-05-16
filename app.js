@@ -8,6 +8,7 @@ const state = {
   selectedDragKey: null,
   activePresetId: null,
   appMode: 'edit',
+  canvasH: 1350,
 };
 
 function getTemplate(id) {
@@ -76,8 +77,10 @@ function applyTextStyles(container, slideState, showSelection) {
     const key = el.dataset.dragKey;
     const opacity = slideState['_opacity_' + key];
     const size = slideState['_size_' + key];
+    const color = slideState['_color_' + key];
     if (opacity !== undefined) el.style.opacity = opacity / 100;
     if (size !== undefined) el.style.fontSize = size + 'px';
+    if (color) el.style.color = color;
     if (showSelection) {
       el.classList.toggle('drag-selected', key === state.selectedDragKey);
     }
@@ -194,6 +197,112 @@ function init() {
     grid.style.display = hidden ? '' : 'none';
     btn.textContent = hidden ? '−' : '+';
   });
+  initRatioBtns();
+  initSlideRegen();
+}
+
+function initRatioBtns() {
+  document.querySelectorAll('.ratio-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const h = parseInt(btn.dataset.h);
+      if (state.canvasH === h) return;
+      state.canvasH = h;
+      document.querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b === btn));
+      scaleCanvas();
+      renderCanvas();
+      renderFilmstrip();
+    });
+  });
+}
+
+let slideRegenTargetIdx = null;
+
+function initSlideRegen() {
+  const modal = document.getElementById('slideRegenModal');
+  document.getElementById('slideRegenClose').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+  document.getElementById('slideRegenHint').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runSlideRegen();
+  });
+  document.getElementById('slideRegenBtn').addEventListener('click', runSlideRegen);
+
+  document.getElementById('filmstrip').addEventListener('click', e => {
+    const regenBtn = e.target.closest('.filmstrip-regen-btn');
+    if (!regenBtn) return;
+    e.stopPropagation();
+    slideRegenTargetIdx = parseInt(regenBtn.dataset.index);
+    document.getElementById('slideRegenTitle').textContent = `슬라이드 ${slideRegenTargetIdx + 1} 재생성`;
+    document.getElementById('slideRegenHint').value = '';
+    document.getElementById('slideRegenBtn').disabled = false;
+    document.getElementById('slideRegenBtn').textContent = '재생성';
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('slideRegenHint').focus(), 30);
+  });
+}
+
+async function runSlideRegen() {
+  if (slideRegenTargetIdx === null) return;
+  const template = getTemplate(state.templateId);
+  const hint = document.getElementById('slideRegenHint').value.trim();
+  const btn = document.getElementById('slideRegenBtn');
+  btn.disabled = true;
+  btn.textContent = '생성 중...';
+
+  const idx = slideRegenTargetIdx;
+  const keys = (template.fieldsForSlide ? template.fieldsForSlide(idx) : template.fields.map(f => f.key))
+    .filter(k => k !== 'bgImage');
+  const fieldDescs = keys.map(k => {
+    const def = template.fields.find(f => f.key === k);
+    return `- ${k}: ${def?.label || k}`;
+  }).join('\n');
+
+  const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
+  const speech = document.querySelector('.ai-speech-btn.active')?.dataset.speech || 'friendly';
+  const target = document.querySelector('.ai-target-btn.active')?.dataset.target || 'all';
+
+  const contextSlides = state.slides.map((s, i) => {
+    const vals = keys.map(k => `${k}: ${s[k] || ''}`).join(', ');
+    return `슬라이드 ${i + 1}: ${vals}`;
+  }).join('\n');
+
+  const systemMsg = `당신은 짐샤크(Gymshark) 한국 공식 인스타그램 @gymspire.kr의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.`;
+  const userMsg = `현재 카드뉴스의 전체 맥락:\n${contextSlides}\n\n슬라이드 ${idx + 1}번만 재생성해주세요.\n\n필드 목록:\n${fieldDescs}\n\n${hint ? `수정 방향: ${hint}\n\n` : ''}JSON만 응답. { ${keys.map(k => `"${k}": "값"`).join(', ')} }`;
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemMsg },
+          { role: 'user', content: userMsg },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.80,
+        max_tokens: 2000,
+      }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    const slideState = state.slides[idx];
+    keys.forEach(k => { if (parsed[k] !== undefined) slideState[k] = parsed[k]; });
+    renderCanvas();
+    renderFilmstrip();
+    renderEditor();
+    pushHistory();
+    document.getElementById('slideRegenModal').style.display = 'none';
+  } catch (err) {
+    alert(`재생성 실패: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '재생성';
+  }
 }
 
 // ── Task 3: Template Gallery + State ────────────────────────────────────────
@@ -276,7 +385,7 @@ function renderFilmstrip() {
 
   filmstrip.innerHTML = state.slides.map((slideState, i) => {
     return `
-      <div class="filmstrip-item ${i === state.slideIndex ? 'active' : ''}" data-index="${i}">
+      <div class="filmstrip-item ${i === state.slideIndex ? 'active' : ''}" data-index="${i}" draggable="true">
         <div class="filmstrip-preview-wrap">
           <div class="filmstrip-preview">
             ${buildBgHtml(slideState)}
@@ -284,6 +393,7 @@ function renderFilmstrip() {
           </div>
         </div>
         <span class="filmstrip-num">${i + 1}</span>
+        <button class="filmstrip-regen-btn" data-index="${i}" title="이 슬라이드 재생성">↻</button>
       </div>
     `;
   }).join('')
@@ -307,6 +417,46 @@ function renderFilmstrip() {
       renderCanvas();
     });
   });
+
+  let filmstripDragSrc = null;
+  filmstrip.querySelectorAll('.filmstrip-item[draggable]').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      filmstripDragSrc = parseInt(item.dataset.index);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => item.classList.add('dragging'), 0);
+    });
+    item.addEventListener('dragend', () => {
+      filmstrip.querySelectorAll('.filmstrip-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      filmstrip.querySelectorAll('.filmstrip-item').forEach(el => el.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const destIdx = parseInt(item.dataset.index);
+      if (filmstripDragSrc === null || filmstripDragSrc === destIdx) return;
+      const moved = state.slides.splice(filmstripDragSrc, 1)[0];
+      state.slides.splice(destIdx, 0, moved);
+      if (state.slideIndex === filmstripDragSrc) {
+        state.slideIndex = destIdx;
+      } else if (filmstripDragSrc < state.slideIndex && destIdx >= state.slideIndex) {
+        state.slideIndex--;
+      } else if (filmstripDragSrc > state.slideIndex && destIdx <= state.slideIndex) {
+        state.slideIndex++;
+      }
+      filmstripDragSrc = null;
+      renderFilmstrip();
+      renderCanvas();
+      renderEditor();
+      pushHistory();
+    });
+  });
+
   const addBtn = document.getElementById('addSlideBtn');
   if (addBtn) addBtn.addEventListener('click', addSlide);
 }
@@ -318,12 +468,15 @@ function scaleCanvas() {
   const area = document.querySelector('.canvas-area');
   const wrapper = document.querySelector('.canvas-wrapper');
   const canvas = document.getElementById('canvas');
+  const canvasH = state.canvasH || 1350;
   const availH = area.clientHeight - 170;
   const availW = area.clientWidth - 40;
-  const scale = Math.min(availW / 1080, availH / 1350);
+  const scale = Math.min(availW / 1080, availH / canvasH);
+  canvas.style.width = '1080px';
+  canvas.style.height = canvasH + 'px';
   canvas.style.transform = `scale(${scale})`;
   wrapper.style.width = `${Math.round(1080 * scale)}px`;
-  wrapper.style.height = `${Math.round(1350 * scale)}px`;
+  wrapper.style.height = `${Math.round(canvasH * scale)}px`;
 }
 
 function renderCanvas() {
@@ -488,6 +641,21 @@ function renderEditor() {
     });
   });
 
+  fieldsEl.querySelectorAll('.field-apply-all-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const src = state.slides[state.slideIndex];
+      if (!src) return;
+      state.slides.forEach((s, i) => {
+        if (i === state.slideIndex) return;
+        s.bgImage = src.bgImage;
+        s.bgPosX = src.bgPosX;
+        s.bgPosY = src.bgPosY;
+      });
+      renderFilmstrip();
+      pushHistory();
+    });
+  });
+
   renderTextStylePanel();
 }
 
@@ -518,23 +686,28 @@ function renderTextStylePanel() {
       <span class="text-style-key">${label}</span>
       <button class="text-style-close" id="textStyleClose">선택 해제</button>
     </div>
-    <div class="text-style-row">
-      <label class="field-label">불투명도</label>
-      <div class="text-style-slider-row">
+    <div class="ts-row">
+      <span class="ts-label">불투명도</span>
+      <div class="ts-ctrl">
         <input type="range" class="text-style-range" id="opacityRange" min="0" max="100" value="${opacity}">
         <span class="text-style-val" id="opacityVal">${opacity}%</span>
       </div>
     </div>
-    <div class="text-style-row">
-      <label class="field-label">크기 (px)</label>
-      <div class="text-style-slider-row">
+    <div class="ts-row">
+      <span class="ts-label">크기</span>
+      <div class="ts-ctrl">
+        <button class="ts-step-btn" id="fontSizeMinus">−</button>
         <input type="range" class="text-style-range" id="fontSizeRange" min="8" max="240" value="${size || 60}">
+        <button class="ts-step-btn" id="fontSizePlus">＋</button>
         <span class="text-style-val" id="fontSizeVal">${size || '기본'}</span>
+        <button class="ts-step-btn ts-reset-btn" id="fontSizeReset">↺</button>
       </div>
-      <div class="font-size-stepper">
-        <button class="font-size-step-btn" id="fontSizeMinus">−</button>
-        <button class="font-size-step-btn" id="fontSizePlus">＋</button>
-        <button class="font-size-step-btn font-size-reset-btn" id="fontSizeReset">초기화</button>
+    </div>
+    <div class="ts-row">
+      <span class="ts-label">색상</span>
+      <div class="ts-ctrl">
+        <input type="color" class="text-style-color" id="textColorPicker" value="${slideState['_color_' + key] || '#ffffff'}">
+        <button class="ts-step-btn ts-reset-btn" id="colorReset">↺</button>
       </div>
     </div>
   `;
@@ -582,6 +755,21 @@ function renderTextStylePanel() {
   document.getElementById('fontSizeReset').addEventListener('click', () => {
     applySize(null);
   });
+
+  document.getElementById('textColorPicker').addEventListener('input', e => {
+    slideState['_color_' + key] = e.target.value;
+    applyTextStyles(document.getElementById('canvas'), slideState, true);
+    renderFilmstrip();
+    pushHistoryDebounced();
+  });
+
+  document.getElementById('colorReset').addEventListener('click', () => {
+    delete slideState['_color_' + key];
+    document.getElementById('textColorPicker').value = '#ffffff';
+    applyTextStyles(document.getElementById('canvas'), slideState, true);
+    renderFilmstrip();
+    pushHistoryDebounced();
+  });
 }
 
 function renderField(field, value, slideState) {
@@ -604,11 +792,13 @@ function renderField(field, value, slideState) {
     case 'image': {
       const px = slideState?.bgPosX ?? 50, py = slideState?.bgPosY ?? 50;
       const picker = value ? `<div class="pos-picker"><div class="pos-handle" style="left:${px}%;top:${py}%"></div></div>` : '';
+      const applyAllBtn = value ? `<button class="field-apply-all-btn" data-key="${field.key}">전체 슬라이드 적용</button>` : '';
       return `<div class="field-group">
         <label class="field-label">${field.label}</label>
         <button class="field-image-btn ${value ? 'has-image' : ''}" data-key="${field.key}">
           ${value ? '✓ 이미지 선택됨' : '+ 이미지 업로드'}
         </button>
+        ${applyAllBtn}
         ${picker}
       </div>`;
     }
@@ -810,6 +1000,7 @@ const GYMSHARK_BRAND_KNOWLEDGE = `
 - 짐샤크 글로벌 컬처와 한국 피트니스 커뮤니티를 연결하는 허브`;
 
 let aiPendingSlides = null;
+let aiConversationHistory = [];
 
 function openAiModal() {
   const modal = document.getElementById('aiModal');
@@ -820,6 +1011,7 @@ function openAiModal() {
   document.getElementById('aiGenerate').textContent = '생성하기';
   document.getElementById('aiGenerate').disabled = false;
   aiPendingSlides = null;
+  aiConversationHistory = [];
   renderAiNewsPreview();
   setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
 }
@@ -949,15 +1141,16 @@ async function runAiGenerate() {
 
   try {
     const { systemMsg, userMsg } = buildAiPrompt(template, keyword, tone, slideCount, speech, target, newsItems);
+    aiConversationHistory = [
+      { role: 'system', content: systemMsg },
+      { role: 'user',   content: userMsg },
+    ];
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemMsg },
-          { role: 'user',   content: userMsg },
-        ],
+        messages: aiConversationHistory,
         response_format: { type: 'json_object' },
         temperature: tone === 'info' ? 0.65 : 0.80,
         max_tokens: 10000,
@@ -968,17 +1161,63 @@ async function runAiGenerate() {
     if (data.choices[0].finish_reason === 'length') {
       throw new Error('응답이 너무 길어 중간에 잘렸습니다. 슬라이드 수를 줄이거나 다시 시도해 주세요.');
     }
-    const parsed = JSON.parse(data.choices[0].message.content);
+    const rawContent = data.choices[0].message.content;
+    aiConversationHistory.push({ role: 'assistant', content: rawContent });
+    const parsed = JSON.parse(rawContent);
     aiPendingSlides = parsed.slides;
     renderAiPreview(aiPendingSlides, template);
     document.getElementById('aiResultWrap').style.display = '';
     document.getElementById('aiApplyBtn').style.display = '';
+    document.getElementById('aiFeedback').value = '';
     btn.textContent = '다시 생성';
   } catch (err) {
     alert(`생성 실패: ${err.message}`);
   } finally {
     btn.disabled = false;
     if (!aiPendingSlides) btn.textContent = '생성하기';
+  }
+}
+
+async function runAiFeedback() {
+  const feedback = document.getElementById('aiFeedback').value.trim();
+  if (!feedback || !aiConversationHistory.length) return;
+  const template = getTemplate(state.templateId);
+  const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
+  const feedbackBtn = document.getElementById('aiFeedbackBtn');
+  const genBtn = document.getElementById('aiGenerate');
+  feedbackBtn.disabled = true;
+  feedbackBtn.textContent = '수정 중...';
+  genBtn.disabled = true;
+
+  aiConversationHistory.push({ role: 'user', content: feedback });
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: aiConversationHistory,
+        response_format: { type: 'json_object' },
+        temperature: tone === 'info' ? 0.65 : 0.80,
+        max_tokens: 10000,
+      }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const rawContent = data.choices[0].message.content;
+    aiConversationHistory.push({ role: 'assistant', content: rawContent });
+    const parsed = JSON.parse(rawContent);
+    aiPendingSlides = parsed.slides;
+    renderAiPreview(aiPendingSlides, template);
+    document.getElementById('aiFeedback').value = '';
+  } catch (err) {
+    aiConversationHistory.pop();
+    alert(`수정 실패: ${err.message}`);
+  } finally {
+    feedbackBtn.disabled = false;
+    feedbackBtn.textContent = '수정하기';
+    genBtn.disabled = false;
   }
 }
 
@@ -1045,6 +1284,10 @@ function initAiModal() {
   });
   document.getElementById('aiGenerate').addEventListener('click', runAiGenerate);
   document.getElementById('aiApplyBtn').addEventListener('click', applyAiSlides);
+  document.getElementById('aiFeedbackBtn').addEventListener('click', runAiFeedback);
+  document.getElementById('aiFeedback').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAiFeedback();
+  });
   document.getElementById('aiKeyword').addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAiGenerate();
   });
@@ -1367,7 +1610,7 @@ async function exportAllPng() {
         canvas.style.backgroundImage = 'none';
         canvas.innerHTML = buildBgHtml(s) + template.render(s, i, state.slides.length);
       }
-      const rendered = await html2canvas(canvas, { scale: 1, width: 1080, height: 1350, useCORS: true, allowTaint: true, backgroundColor: '#000000' });
+      const rendered = await html2canvas(canvas, { scale: 1, width: 1080, height: state.canvasH || 1350, useCORS: true, allowTaint: true, backgroundColor: '#000000' });
       const link = document.createElement('a');
       link.download = `gymspire-${state.templateId}-${ts}-${String(i + 1).padStart(2, '0')}.png`;
       link.href = rendered.toDataURL('image/png');
@@ -1401,7 +1644,7 @@ function exportPng() {
   html2canvas(canvas, {
     scale: 1,
     width: 1080,
-    height: 1350,
+    height: state.canvasH || 1350,
     useCORS: true,
     allowTaint: true,
     backgroundColor: '#000000',
