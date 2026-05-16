@@ -99,20 +99,22 @@ async function fetchBlog() {
 }
 
 // ── YouTube Data API v3 ───────────────────────────────────────────────────
-let ytUploadsId = null;
-
 async function fetchYoutube(apiKey) {
-  if (!ytUploadsId) {
+  // Try forHandle then forUsername — serverless has no persistent cache
+  let uploadsId = null;
+  for (const param of ['forHandle=Gymshark', 'forUsername=Gymshark']) {
     const r = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?forHandle=Gymshark&part=contentDetails&key=${apiKey}`
+      `https://www.googleapis.com/youtube/v3/channels?${param}&part=contentDetails&key=${apiKey}`
     );
-    if (!r.ok) return [];
+    if (!r.ok) continue;
     const d = await r.json();
-    ytUploadsId = d.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
-    if (!ytUploadsId) return [];
+    uploadsId = d.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (uploadsId) break;
   }
+  if (!uploadsId) return [];
+
   const r = await fetch(
-    `https://www.googleapis.com/youtube/v3/playlistItems?playlistId=${ytUploadsId}&maxResults=12&part=snippet&key=${apiKey}`
+    `https://www.googleapis.com/youtube/v3/playlistItems?playlistId=${uploadsId}&maxResults=12&part=snippet&key=${apiKey}`
   );
   if (!r.ok) return [];
   const d = await r.json();
