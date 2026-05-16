@@ -1,5 +1,5 @@
 const state = {
-  templateId: 'motivation',
+  templateId: 'cardnews',
   slideIndex: 0,
   slides: [{}],
   outroImage: '',

@@ -1,7 +1,7 @@
 window.GYMSPIRE_TEMPLATES = window.GYMSPIRE_TEMPLATES || [];
 window.GYMSPIRE_TEMPLATES.push({
   id: 'cardnews',
-  name: '카드뉴스',
+  name: '기본',
   defaultSlides: 4,
   maxSlides: 8,
   fields: [
