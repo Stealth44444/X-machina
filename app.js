@@ -1228,14 +1228,18 @@ function renderFullNewsPanel(status) {
 
     view.innerHTML = header + filterTabs + `
       <div class="news-cards-grid">
-        ${pageItems.length ? pageItems.map(item => `
+        ${pageItems.length ? pageItems.map(item => {
+          const domain = item.url ? (() => { try { return new URL(item.url).hostname.replace(/^www\./, ''); } catch { return ''; } })() : '';
+          return `
           <div class="news-card" data-title="${escHtml(item.title)}">
             <span class="news-card-source news-card-source--${item.source}">${NEWS_SOURCE_LABELS[item.source]?.label || item.source}</span>
             <div class="news-card-title">${escHtml(item.title)}</div>
+            ${item.titleKo ? `<div class="news-card-titleko">${escHtml(item.titleKo)}</div>` : ''}
+            ${item.url ? `<a class="news-card-url" href="${escHtml(item.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escHtml(domain)}</a>` : ''}
             <div class="news-card-date">${escHtml(item.date)}</div>
             <button class="news-card-btn">이 소재로 포스트 생성 →</button>
-          </div>
-        `).join('') : `<div style="grid-column:1/-1;padding:40px 0;font-size:13px;color:#333;text-align:center;">해당 소스의 최근 뉴스가 없습니다</div>`}
+          </div>`;
+        }).join('') : `<div style="grid-column:1/-1;padding:40px 0;font-size:13px;color:#333;text-align:center;">해당 소스의 최근 뉴스가 없습니다</div>`}
       </div>
       ${totalPages > 1 ? `
       <div class="news-pagination">

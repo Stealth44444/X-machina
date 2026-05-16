@@ -18,8 +18,10 @@ async function fetchGoogleNews() {
       block.match(/<title>([\s\S]*?)<\/title>/)?.[1] || ''
     ).replace(/\s*-\s*[^-]{1,40}$/, '').trim();
     const ms = new Date(block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || 0).getTime();
+    const link = block.match(/<link>(https?:\/\/[^<\s]+)/)?.[1] ||
+                 block.match(/<guid[^>]*>(https?:\/\/[^<\s]+)/)?.[1] || '';
     if (!title || ms < cut) continue;
-    items.push({ title, date: msToDate(ms), source: 'news', ms });
+    items.push({ title, date: msToDate(ms), source: 'news', url: link, ms });
     if (items.length >= 24) break;
   }
   return items;
@@ -43,7 +45,13 @@ async function fetchBlog() {
     if (obj.publishDate && obj.title && obj.slug) {
       const ms = new Date(obj.publishDate).getTime();
       if (!isNaN(ms) && ms >= cut) {
-        articles.push({ title: obj.title, date: msToDate(ms), source: 'blog', ms });
+        articles.push({
+          title: obj.title,
+          date: msToDate(ms),
+          source: 'blog',
+          url: `https://www.gymshark.com/blogs/news/${obj.slug}`,
+          ms,
+        });
       }
       return;
     }
@@ -68,7 +76,7 @@ async function fetchReddit() {
   return (data?.data?.children || []).flatMap(({ data: p }) => {
     const ms = p.created_utc * 1000;
     if (!p.title || ms < cut) return [];
-    return [{ title: p.title, date: msToDate(ms), source: 'reddit', ms }];
+    return [{ title: p.title, date: msToDate(ms), source: 'reddit', url: `https://www.reddit.com${p.permalink}`, ms }];
   }).slice(0, 12);
 }
 
@@ -94,9 +102,40 @@ async function fetchYoutube(apiKey) {
   return (d.items || []).flatMap(item => {
     const title = item.snippet?.title || '';
     const ms = new Date(item.snippet?.publishedAt || 0).getTime();
+    const videoId = item.snippet?.resourceId?.videoId || '';
     if (!title || ms < cut) return [];
-    return [{ title, date: msToDate(ms), source: 'youtube', ms }];
+    return [{ title, date: msToDate(ms), source: 'youtube', url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : '', ms }];
   });
+}
+
+// ── Batch translate titles to Korean via OpenAI ──────────────────────────
+async function translateTitles(items, openaiKey) {
+  if (!openaiKey || !items.length) return items;
+  try {
+    const titles = items.map(i => i.title);
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 3000,
+        temperature: 0.2,
+        messages: [{
+          role: 'user',
+          content: `Translate these English news titles to natural Korean. Return ONLY a JSON array of strings in the same order, no extra text:\n${JSON.stringify(titles)}`,
+        }],
+      }),
+    });
+    if (!res.ok) return items;
+    const d = await res.json();
+    const raw = d.choices?.[0]?.message?.content?.trim() || '';
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+    const translated = JSON.parse(cleaned);
+    if (!Array.isArray(translated) || translated.length !== items.length) return items;
+    return items.map((item, i) => ({ ...item, titleKo: translated[i] || '' }));
+  } catch {
+    return items;
+  }
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────
@@ -106,6 +145,7 @@ export default async function handler(req, res) {
 
   try {
     const ytKey = process.env.YOUTUBE_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
 
     const [gnews, blog, reddit, youtube] = await Promise.allSettled([
       fetchGoogleNews(),
@@ -125,7 +165,7 @@ export default async function handler(req, res) {
     );
 
     const seen = new Set();
-    const items = Object.values(sourceResults).flat()
+    let items = Object.values(sourceResults).flat()
       .sort((a, b) => b.ms - a.ms)
       .filter(item => {
         const key = item.title.toLowerCase().slice(0, 40);
@@ -134,6 +174,8 @@ export default async function handler(req, res) {
         return true;
       })
       .map(({ ms, ...rest }) => rest);
+
+    items = await translateTitles(items, openaiKey);
 
     res.status(200).json({ items, sources: sourceStatus });
   } catch (err) {
