@@ -1356,24 +1356,16 @@ function applyAiSlides() {
   const template = getTemplate(state.templateId);
   const maxSlides = template.maxSlides || template.slides || 10;
 
-  // 생성된 슬라이드 수에 맞게 배열 확장
-  while (state.slides.length < Math.min(aiPendingSlides.length, maxSlides)) {
-    const defaults = {};
-    template.fields.forEach(f => { defaults[f.key] = f.default ?? ''; });
-    state.slides.push(defaults);
-  }
-
-  aiPendingSlides.forEach((slideData, i) => {
-    if (i >= state.slides.length) return;
-    state.slides[i].bgImage = '';
-    delete state.slides[i].bgPosX;
-    delete state.slides[i].bgPosY;
+  state.slides = aiPendingSlides.slice(0, maxSlides).map((slideData, i) => {
+    const slide = {};
+    template.fields.forEach(f => { slide[f.key] = f.default ?? ''; });
     const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
       .filter(k => k !== 'bgImage');
     keys.forEach(k => {
       if (slideData[k] === undefined) return;
-      state.slides[i][k] = k === 'body' ? smartKoreanBreaks(slideData[k]) : slideData[k];
+      slide[k] = k === 'body' ? smartKoreanBreaks(slideData[k]) : slideData[k];
     });
+    return slide;
   });
 
   state.slideIndex = 0;
