@@ -1,5 +1,6 @@
-const CUTOFF_MS = 90 * 24 * 60 * 60 * 1000;
-function cutoff() { return Date.now() - CUTOFF_MS; }
+const CUTOFF_MS    = 90  * 24 * 60 * 60 * 1000;
+const YT_CUTOFF_MS = 365 * 24 * 60 * 60 * 1000;
+function cutoff(ms = CUTOFF_MS) { return Date.now() - ms; }
 
 function msToDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
 
@@ -137,7 +138,7 @@ async function fetchYoutube(apiKey) {
   );
   if (!r.ok) return [];
   const d = await r.json();
-  const cut = cutoff();
+  const cut = cutoff(YT_CUTOFF_MS);
   return (d.items || []).flatMap(item => {
     const title = item.snippet?.title || '';
     const ms = new Date(item.snippet?.publishedAt || 0).getTime();
