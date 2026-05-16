@@ -10,6 +10,7 @@ export default async function handler(req, res) {
     if (!rssRes.ok) throw new Error(`RSS ${rssRes.status}`);
     const xml = await rssRes.text();
 
+    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
     const items = [];
     for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
       const block = m[1];
@@ -18,8 +19,10 @@ export default async function handler(req, res) {
         block.match(/<title>([\s\S]*?)<\/title>/)?.[1] || '';
       const title = rawTitle.replace(/\s*-\s*[^-]{1,40}$/, '').trim();
       const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
-      const date = pubDate ? new Date(pubDate).toISOString().slice(0, 10) : '';
-      if (title) items.push({ title, date });
+      const pubMs = pubDate ? new Date(pubDate).getTime() : 0;
+      if (!title || pubMs < cutoff) continue;
+      const date = new Date(pubMs).toISOString().slice(0, 10);
+      items.push({ title, date });
       if (items.length >= 8) break;
     }
 
