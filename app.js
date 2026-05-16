@@ -7,6 +7,7 @@ const state = {
   outroPosY: 50,
   selectedDragKey: null,
   activePresetId: null,
+  appMode: 'edit',
 };
 
 function getTemplate(id) {
@@ -183,12 +184,8 @@ function init() {
   initAiModal();
   renderPresets();
   fetchGymsharkNews();
-  document.getElementById('newsToggle').addEventListener('click', () => {
-    const list = document.getElementById('newsList');
-    const btn = document.getElementById('newsToggle');
-    const hidden = list.style.display === 'none';
-    list.style.display = hidden ? '' : 'none';
-    btn.textContent = hidden ? '−' : '+';
+  document.getElementById('newsModeBtn').addEventListener('click', () => {
+    setMode(state.appMode === 'news' ? 'edit' : 'news');
   });
   document.getElementById('pinterestToggle').addEventListener('click', () => {
     const grid = document.getElementById('keywordGrid');
@@ -216,6 +213,7 @@ function renderGallery() {
 function loadTemplate(id) {
   const template = getTemplate(id);
   if (!template) return;
+  if (state.appMode === 'news') setMode('edit');
   state.templateId = id;
   state.slideIndex = 0;
   state.selectedDragKey = null;
@@ -1125,13 +1123,34 @@ function renderPresets() {
 const newsCache = { items: [], fetchedAt: 0 };
 const NEWS_CACHE_TTL = 30 * 60 * 1000;
 
-async function fetchGymsharkNews() {
+function setMode(mode) {
+  state.appMode = mode;
+  const canvasArea = document.querySelector('.canvas-area');
+  const editorPanel = document.querySelector('.editor-panel');
+  const newsView = document.getElementById('newsView');
+  const btn = document.getElementById('newsModeBtn');
+
+  if (mode === 'news') {
+    canvasArea.style.display = 'none';
+    editorPanel.style.display = 'none';
+    newsView.style.display = '';
+    btn.classList.add('active');
+    renderFullNewsPanel();
+  } else {
+    canvasArea.style.display = '';
+    editorPanel.style.display = '';
+    newsView.style.display = 'none';
+    btn.classList.remove('active');
+  }
+}
+
+async function fetchGymsharkNews(forceRefresh) {
   const now = Date.now();
-  if (newsCache.items.length > 0 && now - newsCache.fetchedAt < NEWS_CACHE_TTL) {
-    renderNewsPanel();
+  if (!forceRefresh && newsCache.items.length > 0 && now - newsCache.fetchedAt < NEWS_CACHE_TTL) {
+    if (state.appMode === 'news') renderFullNewsPanel();
     return;
   }
-  renderNewsPanel('loading');
+  if (state.appMode === 'news') renderFullNewsPanel('loading');
   try {
     const res = await fetch('/api/news');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1139,36 +1158,56 @@ async function fetchGymsharkNews() {
     if (data.error) throw new Error(data.error);
     newsCache.items = data.items || [];
     newsCache.fetchedAt = now;
-    renderNewsPanel();
+    if (state.appMode === 'news') renderFullNewsPanel();
     renderAiNewsPreview();
   } catch {
-    renderNewsPanel('error');
+    if (state.appMode === 'news') renderFullNewsPanel('error');
   }
 }
 
-function renderNewsPanel(status) {
-  const list = document.getElementById('newsList');
-  if (!list) return;
+function renderFullNewsPanel(status) {
+  const view = document.getElementById('newsView');
+  if (!view) return;
+
+  const header = `
+    <div class="news-view-header">
+      <div>
+        <span class="news-view-eyebrow">GYMSHARK</span>
+        <h2 class="news-view-title">최신 뉴스</h2>
+        <p class="news-view-sub">헤드라인을 클릭하면 AI 포스트 생성으로 바로 연결됩니다</p>
+      </div>
+      <div class="news-view-actions">
+        <button class="news-refresh-btn" id="newsRefreshBtn">↻ 새로고침</button>
+        <button class="news-back-btn" id="newsBackBtn">← 편집으로</button>
+      </div>
+    </div>`;
+
   if (status === 'loading') {
-    list.innerHTML = `<div class="news-status">불러오는 중...</div>`;
-    return;
-  }
-  if (status === 'error' || !newsCache.items.length) {
-    list.innerHTML = `<div class="news-status">뉴스를 불러올 수 없습니다</div>`;
-    return;
-  }
-  list.innerHTML = newsCache.items.map(item => `
-    <div class="news-item" data-title="${escHtml(item.title)}">
-      <div class="news-item-title">${escHtml(item.title)}</div>
-      <div class="news-item-meta">${escHtml(item.date)}</div>
-    </div>
-  `).join('');
-  list.querySelectorAll('.news-item').forEach(el => {
-    el.addEventListener('click', () => {
-      document.getElementById('aiKeyword').value = el.dataset.title;
-      openAiModal();
+    view.innerHTML = header + `<div class="news-view-empty">불러오는 중...</div>`;
+  } else if (status === 'error' || !newsCache.items.length) {
+    view.innerHTML = header + `<div class="news-view-empty">뉴스를 불러올 수 없습니다</div>`;
+  } else {
+    view.innerHTML = header + `
+      <div class="news-cards-grid">
+        ${newsCache.items.map(item => `
+          <div class="news-card" data-title="${escHtml(item.title)}">
+            <div class="news-card-title">${escHtml(item.title)}</div>
+            <div class="news-card-date">${escHtml(item.date)}</div>
+            <button class="news-card-btn">이 뉴스로 포스트 생성 →</button>
+          </div>
+        `).join('')}
+      </div>`;
+    view.querySelectorAll('.news-card-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('aiKeyword').value = btn.closest('.news-card').dataset.title;
+        setMode('edit');
+        openAiModal();
+      });
     });
-  });
+  }
+
+  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => fetchGymsharkNews(true));
+  document.getElementById('newsBackBtn')?.addEventListener('click', () => setMode('edit'));
 }
 
 function renderAiNewsPreview() {
