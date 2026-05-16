@@ -99,18 +99,37 @@ async function fetchBlog() {
 }
 
 // ── YouTube Data API v3 ───────────────────────────────────────────────────
-async function fetchYoutube(apiKey) {
-  // Try forHandle then forUsername — serverless has no persistent cache
-  let uploadsId = null;
-  for (const param of ['forHandle=Gymshark', 'forUsername=Gymshark']) {
-    const r = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?${param}&part=contentDetails&key=${apiKey}`
-    );
-    if (!r.ok) continue;
-    const d = await r.json();
-    uploadsId = d.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
-    if (uploadsId) break;
+async function getUploadsPlaylistId(apiKey) {
+  // 1) Try YouTube Data API with multiple handle/username formats
+  for (const param of ['forHandle=Gymshark', 'forHandle=gymshark', 'forUsername=Gymshark']) {
+    try {
+      const r = await fetch(
+        `https://www.googleapis.com/youtube/v3/channels?${param}&part=contentDetails&key=${apiKey}`
+      );
+      if (!r.ok) continue;
+      const d = await r.json();
+      const id = d.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+      if (id) return id;
+    } catch {}
   }
+
+  // 2) Fallback: scrape youtube.com/@Gymshark for channelId, derive uploads playlist (UC→UU)
+  try {
+    const r = await fetch('https://www.youtube.com/@Gymshark', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
+    });
+    if (r.ok) {
+      const html = await r.text();
+      const m = html.match(/"channelId":"(UC[\w-]{22})"/);
+      if (m) return m[1].replace(/^UC/, 'UU');
+    }
+  } catch {}
+
+  return null;
+}
+
+async function fetchYoutube(apiKey) {
+  const uploadsId = await getUploadsPlaylistId(apiKey);
   if (!uploadsId) return [];
 
   const r = await fetch(
