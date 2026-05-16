@@ -28,15 +28,16 @@ async function fetchGoogleNews() {
 }
 
 // ── Gymshark official blog (Next.js __NEXT_DATA__ parse) ─────────────────
-const BLOG_URLS = [
-  'https://www.gymshark.com/blog',
-  'https://www.gymshark.com/blog/category/gymshark',
-  'https://www.gymshark.com/blog/category/product-and-style',
-  'https://www.gymshark.com/blog/category/fitness',
+const BLOG_PAGES = [
+  { url: 'https://www.gymshark.com/blog',                              category: null },
+  { url: 'https://www.gymshark.com/blog/category/gymshark',           category: 'gymshark' },
+  { url: 'https://www.gymshark.com/blog/category/product-and-style',  category: 'product-and-style' },
+  { url: 'https://www.gymshark.com/blog/category/fitness',            category: 'fitness' },
+  { url: 'https://www.gymshark.com/blog/category/health',             category: 'health' },
 ];
 
-async function fetchBlogPage(url) {
-  const res = await fetch(url, {
+async function fetchBlogPage({ url: pageUrl, category }) {
+  const res = await fetch(pageUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   });
   if (!res.ok) return [];
@@ -46,21 +47,36 @@ async function fetchBlogPage(url) {
   const data = JSON.parse(m[1]);
   const cut = cutoff();
   const articles = [];
+  const seen = new Set();
+
+  function articleUrl(obj, catSlug) {
+    // Prefer any direct URL/path field on the object
+    const direct = obj.url || obj.href || obj.path || obj.fullPath || obj.canonicalUrl || '';
+    if (direct.startsWith('http')) return direct;
+    if (direct.startsWith('/')) return `https://www.gymshark.com${direct}`;
+    // Use slug + category context to build URL
+    const slug = obj.slug || obj.handle || '';
+    if (!slug) return '';
+    const cat = catSlug || obj.category?.slug || obj.categories?.[0]?.slug || '';
+    return cat
+      ? `https://www.gymshark.com/blog/category/${cat}/${slug}`
+      : `https://www.gymshark.com/blog/${slug}`;
+  }
+
   function walk(obj, depth) {
-    if (depth > 12 || !obj || typeof obj !== 'object') return;
+    if (depth > 14 || !obj || typeof obj !== 'object') return;
     if (Array.isArray(obj)) { obj.forEach(v => walk(v, depth + 1)); return; }
-    if (obj.publishDate && obj.title && obj.slug) {
-      const ms = new Date(obj.publishDate).getTime();
-      if (!isNaN(ms) && ms >= cut) {
-        articles.push({
-          title: obj.title,
-          date: msToDate(ms),
-          source: 'blog',
-          url: `https://www.gymshark.com/blog/${obj.slug}`,
-          ms,
-        });
+
+    const slug = obj.slug || obj.handle || '';
+    const rawDate = obj.publishDate || obj.publishedDate || obj.publishedAt || obj.date || '';
+    if (rawDate && obj.title && slug) {
+      const ms = new Date(rawDate).getTime();
+      const link = articleUrl(obj, category);
+      if (!isNaN(ms) && ms >= cut && link && !seen.has(link)) {
+        seen.add(link);
+        articles.push({ title: obj.title, date: msToDate(ms), source: 'blog', url: link, ms });
       }
-      return;
+      // Keep walking — article object may contain nested articles too
     }
     Object.values(obj).forEach(v => walk(v, depth + 1));
   }
@@ -69,7 +85,7 @@ async function fetchBlogPage(url) {
 }
 
 async function fetchBlog() {
-  const results = await Promise.allSettled(BLOG_URLS.map(fetchBlogPage));
+  const results = await Promise.allSettled(BLOG_PAGES.map(fetchBlogPage));
   const seen = new Set();
   const articles = [];
   for (const r of results) {
