@@ -1242,22 +1242,31 @@ function renderFullNewsPanel(status) {
         <span class="news-page-info">${newsPage + 1} / ${totalPages}</span>
         <button class="news-page-btn" id="newsNextBtn" ${newsPage >= totalPages - 1 ? 'disabled' : ''}>다음 →</button>
       </div>` : ''}`;
-    view.querySelectorAll('.news-card-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.getElementById('aiKeyword').value = btn.closest('.news-card').dataset.title;
-        setMode('edit');
-        openAiModal();
-      });
-    });
   }
 
-  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => { newsPage = 0; newsFilter = 'all'; fetchGymsharkNews(true); });
-  document.getElementById('newsBackBtn')?.addEventListener('click', () => setMode('edit'));
-  document.getElementById('newsPrevBtn')?.addEventListener('click', () => { newsPage--; renderFullNewsPanel(); });
-  document.getElementById('newsNextBtn')?.addEventListener('click', () => { newsPage++; renderFullNewsPanel(); });
-  view.querySelectorAll('.news-filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => { newsFilter = btn.dataset.filter; newsPage = 0; renderFullNewsPanel(); });
-  });
+  // Single delegated handler — overwrites previous, no accumulation
+  view.onclick = e => {
+    const filterBtn = e.target.closest('.news-filter-btn');
+    if (filterBtn) {
+      if (filterBtn.classList.contains('failed')) return;
+      newsFilter = filterBtn.dataset.filter;
+      newsPage = 0;
+      renderFullNewsPanel();
+      return;
+    }
+    const cardBtn = e.target.closest('.news-card-btn');
+    if (cardBtn) {
+      document.getElementById('aiKeyword').value = cardBtn.closest('.news-card').dataset.title;
+      setMode('edit');
+      openAiModal();
+      return;
+    }
+    const id = e.target.closest('[id]')?.id;
+    if (id === 'newsRefreshBtn') { newsPage = 0; newsFilter = 'all'; fetchGymsharkNews(true); }
+    else if (id === 'newsBackBtn') { setMode('edit'); }
+    else if (id === 'newsPrevBtn') { newsPage--; renderFullNewsPanel(); }
+    else if (id === 'newsNextBtn') { newsPage++; renderFullNewsPanel(); }
+  };
 }
 
 function renderAiNewsPreview() {
