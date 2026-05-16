@@ -199,6 +199,15 @@ function init() {
   });
   initRatioBtns();
   initSlideRegen();
+
+  document.addEventListener('pointerdown', e => {
+    if (!state.selectedDragKey) return;
+    if (e.target.closest('[data-drag-key]') || e.target.closest('#textStylePanel')) return;
+    const slideState = state.slides[state.slideIndex];
+    state.selectedDragKey = null;
+    renderTextStylePanel();
+    applyTextStyles(document.getElementById('canvas'), slideState, true);
+  });
 }
 
 function initRatioBtns() {
