@@ -656,6 +656,46 @@ function updateField(key, value) {
 
 // ── AI Generation ────────────────────────────────────────────────────────────
 
+const AI_SPEECH_GUIDES = {
+  friendly: `
+## 말투: 친근 존댓말
+- 어미 "~해요", "~이에요", "~거든요", "~더라고요", "~네요" 위주
+- 딱딱한 "~합니다/~입니다" 사용 금지
+- 독자와 대화하듯. 따뜻하고 가까운 느낌
+- 예: "이거 써보니까 확실히 달라요" / "사실 저도 처음엔 몰랐거든요"`,
+  mz: `
+## 말투: MZ 감성 반말
+- 어미 "~임", "~함", "~거든", "~지 않나", "~인데", "~잖아" 자연스럽게
+- 짧게 끊는 문장 허용. 마침표 없어도 됨
+- 이모지 자연스럽게 1-2개 허용 (남용 금지)
+- 예: "솔직히 이거 예상 못 했음" / "진짜 왜 이제 알았지" / "이건 좀 다름"
+- SNS DM 보내는 느낌. 꾸밈 없이 솔직하게`,
+  formal: `
+## 말투: 격식체
+- 어미 "~합니다", "~입니다", "~됩니다" 위주
+- 감탄사·이모지·구어체 일절 사용 금지
+- 브랜드 공식 채널의 전문적이고 신뢰감 있는 어조`,
+};
+
+const AI_TARGET_GUIDES = {
+  all: `
+## 타겟: 전체
+- 성별 구분 없이 피트니스 라이프스타일 전반
+- 운동·건강·자기계발이라는 공통 가치 중심 어필`,
+  women: `
+## 타겟: 20-30대 여성
+- 착용감·핏·컬러·스타일·데일리 활용도 강조
+- 운동 + 일상 두 가지 활용 어필
+- 감성적 표현 허용 ("착용감 진짜 좋음", "데일리로 입어도 손색없음")
+- 다이어트·체형 관리·자기계발 맥락에서 공감대 형성`,
+  men: `
+## 타겟: 20-30대 남성 피트니스
+- 퍼포먼스·기능성·내구성 중심 어필
+- 세트수·중량·기록 등 수치 데이터 선호
+- 헬스·보디빌딩·피지크 문화 언어 사용
+- 감성보다 실용·기능 중심`,
+};
+
 const AI_TONE_GUIDES = {
   casual: `
 ### 캐주얼 톤 작성 원칙
@@ -701,7 +741,7 @@ function openAiModal() {
   setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
 }
 
-function buildAiPrompt(template, keyword, tone, slideCount) {
+function buildAiPrompt(template, keyword, tone, slideCount, speech, target) {
   const slideDescs = Array.from({ length: slideCount }, (_, i) => {
     const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
       .filter(k => k !== 'bgImage');
@@ -744,7 +784,9 @@ function buildAiPrompt(template, keyword, tone, slideCount) {
 - 슬라이드 1 (표지): 강한 후킹. 다음 슬라이드가 궁금하게 만듦
 - 슬라이드 2~N-1: 각각 독립된 가치 단위. 앞에서 던진 궁금증 해소 + 새 궁금증 생성
 - 마지막 슬라이드: 실천/행동으로 자연스럽게 연결. 단정하게 마무리
-${AI_TONE_GUIDES[tone]}`;
+${AI_TONE_GUIDES[tone]}
+${AI_SPEECH_GUIDES[speech] || AI_SPEECH_GUIDES.friendly}
+${AI_TARGET_GUIDES[target] || AI_TARGET_GUIDES.all}`;
 
   const userMsg = `요청 내용: ${keyword}
 템플릿 유형: ${template.name}
@@ -771,6 +813,8 @@ async function runAiGenerate() {
   if (!keyword) { document.getElementById('aiKeyword').focus(); return; }
 
   const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
+  const speech = document.querySelector('.ai-speech-btn.active')?.dataset.speech || 'friendly';
+  const target = document.querySelector('.ai-target-btn.active')?.dataset.target || 'all';
   const template = getTemplate(state.templateId);
   const selectedCount = parseInt(document.querySelector('.ai-count-btn.active')?.dataset.count || '4');
   const slideCount = Math.min(selectedCount, template.maxSlides || 8);
@@ -783,7 +827,7 @@ async function runAiGenerate() {
   aiPendingSlides = null;
 
   try {
-    const { systemMsg, userMsg } = buildAiPrompt(template, keyword, tone, slideCount);
+    const { systemMsg, userMsg } = buildAiPrompt(template, keyword, tone, slideCount, speech, target);
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -877,6 +921,18 @@ function initAiModal() {
   document.querySelectorAll('.ai-count-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.ai-speech-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ai-speech-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.ai-target-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ai-target-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });
   });

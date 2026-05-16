@@ -54,58 +54,87 @@
 
   <div id="aiModal" class="ai-overlay" style="display:none">
     <div class="ai-panel">
-
       <div id="aiGenScreen">
+
         <div class="ai-panel-header">
           <div class="ai-panel-header-row">
-            <span class="ai-panel-eyebrow">✦ AI GENERATE</span>
-            <button class="ai-btn ai-btn-ghost" id="aiClose" style="padding:6px 14px;font-size:11px;">닫기</button>
-          </div>
-          <h2 class="ai-panel-title">포스트 생성</h2>
-        </div>
-
-        <div class="ai-field">
-          <label class="ai-label">어떤 포스트를 만들까요?</label>
-          <textarea class="ai-input ai-textarea" id="aiKeyword" placeholder="짐샤크 Vital Seamless 레깅스 신상 입고. 핑크/베이지 컬러. 20대 여성 타겟. 운동 후 데일리룩으로도 활용 가능한 점 강조. 국내배송 CTA 포함."></textarea>
-        </div>
-
-        <div class="ai-field">
-          <label class="ai-label">톤</label>
-          <div class="ai-tone-row">
-            <button class="ai-tone-btn active" data-tone="casual">캐주얼</button>
-            <button class="ai-tone-btn" data-tone="hype">자극</button>
-            <button class="ai-tone-btn" data-tone="info">정보성</button>
-            <button class="ai-tone-btn" data-tone="promo">프로모션</button>
+            <div>
+              <span class="ai-panel-eyebrow">✦ AI GENERATE</span>
+              <h2 class="ai-panel-title">포스트 생성</h2>
+            </div>
+            <button class="ai-btn ai-btn-ghost" id="aiClose">닫기</button>
           </div>
         </div>
 
-        <div class="ai-field">
-          <label class="ai-label">슬라이드 수</label>
-          <div class="ai-tone-row">
-            <button class="ai-count-btn" data-count="3">3장</button>
-            <button class="ai-count-btn active" data-count="4">4장</button>
-            <button class="ai-count-btn" data-count="5">5장</button>
-            <button class="ai-count-btn" data-count="6">6장</button>
-            <button class="ai-count-btn" data-count="7">7장</button>
-            <button class="ai-count-btn" data-count="8">8장</button>
-          </div>
-        </div>
+        <div class="ai-body">
 
-        <div id="aiResultWrap" style="display:none">
-          <div class="ai-result-header">
-            <span class="ai-label">생성 결과</span>
+          <div class="ai-field">
+            <label class="ai-label">어떤 포스트를 만들까요?</label>
+            <textarea class="ai-input ai-textarea" id="aiKeyword" placeholder="짐샤크 Vital Seamless 레깅스 신상 입고. 핑크/베이지 컬러. 20대 여성 타겟. 운동 후 데일리룩으로도 활용 가능한 점 강조. 국내배송 CTA 포함."></textarea>
           </div>
-          <div id="aiResultContent" class="ai-result-list"></div>
+
+          <div class="ai-options-grid">
+
+            <div class="ai-field ai-field--full">
+              <label class="ai-label">콘텐츠 톤</label>
+              <div class="ai-tone-row">
+                <button class="ai-tone-btn active" data-tone="casual">캐주얼</button>
+                <button class="ai-tone-btn" data-tone="hype">자극·동기부여</button>
+                <button class="ai-tone-btn" data-tone="info">정보성</button>
+                <button class="ai-tone-btn" data-tone="promo">프로모션</button>
+              </div>
+            </div>
+
+            <div class="ai-field">
+              <label class="ai-label">말투</label>
+              <div class="ai-tone-row">
+                <button class="ai-speech-btn active" data-speech="friendly">친근 존댓말</button>
+                <button class="ai-speech-btn" data-speech="mz">MZ 반말</button>
+                <button class="ai-speech-btn" data-speech="formal">격식체</button>
+              </div>
+            </div>
+
+            <div class="ai-field">
+              <label class="ai-label">타겟</label>
+              <div class="ai-tone-row">
+                <button class="ai-target-btn active" data-target="all">전체</button>
+                <button class="ai-target-btn" data-target="women">여성향</button>
+                <button class="ai-target-btn" data-target="men">남성향</button>
+              </div>
+            </div>
+
+            <div class="ai-field ai-field--full">
+              <label class="ai-label">슬라이드 수</label>
+              <div class="ai-tone-row">
+                <button class="ai-count-btn" data-count="3">3장</button>
+                <button class="ai-count-btn active" data-count="4">4장</button>
+                <button class="ai-count-btn" data-count="5">5장</button>
+                <button class="ai-count-btn" data-count="6">6장</button>
+                <button class="ai-count-btn" data-count="7">7장</button>
+                <button class="ai-count-btn" data-count="8">8장</button>
+              </div>
+            </div>
+
+          </div>
+
+          <div id="aiResultWrap" style="display:none">
+            <div class="ai-result-header">
+              <span class="ai-label">생성 결과</span>
+            </div>
+            <div id="aiResultContent" class="ai-result-list"></div>
+          </div>
+
         </div>
 
         <div class="ai-actions">
+          <span class="ai-hint">Ctrl+Enter로 생성</span>
           <div class="ai-actions-right">
-            <button class="ai-btn ai-btn-ghost" id="aiApplyBtn" style="display:none">적용</button>
+            <button class="ai-btn ai-btn-ghost" id="aiApplyBtn" style="display:none">슬라이드에 적용</button>
             <button class="ai-btn ai-btn-primary" id="aiGenerate">생성하기</button>
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
   </div>
 
