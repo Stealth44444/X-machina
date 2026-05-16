@@ -28,8 +28,15 @@ async function fetchGoogleNews() {
 }
 
 // ── Gymshark official blog (Next.js __NEXT_DATA__ parse) ─────────────────
-async function fetchBlog() {
-  const res = await fetch('https://www.gymshark.com/blogs/news', {
+const BLOG_URLS = [
+  'https://www.gymshark.com/blog',
+  'https://www.gymshark.com/blog/category/gymshark',
+  'https://www.gymshark.com/blog/category/product-and-style',
+  'https://www.gymshark.com/blog/category/fitness',
+];
+
+async function fetchBlogPage(url) {
+  const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   });
   if (!res.ok) return [];
@@ -49,7 +56,7 @@ async function fetchBlog() {
           title: obj.title,
           date: msToDate(ms),
           source: 'blog',
-          url: `https://www.gymshark.com/blogs/news/${obj.slug}`,
+          url: `https://www.gymshark.com/blog/${obj.slug}`,
           ms,
         });
       }
@@ -58,7 +65,20 @@ async function fetchBlog() {
     Object.values(obj).forEach(v => walk(v, depth + 1));
   }
   walk(data, 0);
-  return articles.sort((a, b) => b.ms - a.ms).slice(0, 12);
+  return articles;
+}
+
+async function fetchBlog() {
+  const results = await Promise.allSettled(BLOG_URLS.map(fetchBlogPage));
+  const seen = new Set();
+  const articles = [];
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue;
+    for (const a of r.value) {
+      if (!seen.has(a.url)) { seen.add(a.url); articles.push(a); }
+    }
+  }
+  return articles.sort((a, b) => b.ms - a.ms).slice(0, 20);
 }
 
 // ── Reddit r/gymshark ────────────────────────────────────────────────────
