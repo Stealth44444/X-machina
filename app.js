@@ -1620,19 +1620,14 @@ async function runAiFeedback() {
 function renderAiPreview(slides, template) {
   const el = document.getElementById('aiResultContent');
   el.innerHTML = slides.map((slide, i) => {
-    const content = template.render(slide, i, slides.length);
     const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
       .filter(k => k !== 'bgImage');
-    const title = escHtml(String(slide.title || slide[keys[0]] || ''));
-    const body = keys.includes('body') ? escHtml(String(slide.body || '').replace(/\n/g, ' ')) : '';
-    return `<div class="ai-card-item">
-      <div class="ai-card-wrap"><div class="ai-card-inner">${content}</div></div>
-      <div class="ai-card-text">
-        <span class="ai-card-num">SLIDE ${i + 1}</span>
-        <div class="ai-card-title-text">${title}</div>
-        ${body ? `<div class="ai-card-body-prev">${body}</div>` : ''}
-      </div>
-    </div>`;
+    const rows = keys.map(k => {
+      const def = template.fields.find(f => f.key === k);
+      const val = escHtml(String(slide[k] || ''));
+      return `<div class="ai-slide-field"><strong>${def?.label || k}:</strong> ${val}</div>`;
+    }).join('');
+    return `<div class="ai-slide-preview"><div class="ai-slide-num">SLIDE ${i + 1}</div>${rows}</div>`;
   }).join('');
 }
 

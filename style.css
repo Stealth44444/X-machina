@@ -792,7 +792,7 @@ body {
 .ai-speech-btn:hover, .ai-target-btn:hover { border-color: #444; color: #aaa; }
 .ai-speech-btn.active, .ai-target-btn.active { border-color: #2B9BF4; color: #2B9BF4; background: rgba(43,155,244,0.07); }
 .ai-result-header { padding-top: 20px; border-top: 1px solid #222; margin-bottom: 12px; }
-.ai-result-list { display: flex; flex-direction: column; gap: 0; max-height: 240px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+.ai-result-list { max-height: 200px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
 
 .ai-slide-target-row {
   padding: 10px 0;
