@@ -42,45 +42,46 @@ async function fetchBlogPage({ url: pageUrl, category }) {
   });
   if (!res.ok) return [];
   const html = await res.text();
-  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-  if (!m) return [];
-  const data = JSON.parse(m[1]);
+
+  // Build slug → actual href map from rendered <a> tags (most reliable source for correct URLs)
+  const slugToHref = {};
+  for (const m of html.matchAll(/href="(\/blog\/[^"?#]+)"/g)) {
+    const path = m[1];
+    if (/^\/blog\/(category|tag|author)(\/|$)/.test(path)) continue; // skip listing pages
+    const slug = path.split('/').filter(Boolean).pop();
+    if (slug && !slugToHref[slug]) slugToHref[slug] = path;
+  }
+
+  // Parse __NEXT_DATA__ for title + date
+  const ndm = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!ndm) return [];
+
   const cut = cutoff();
   const articles = [];
   const seen = new Set();
 
-  function articleUrl(obj, catSlug) {
-    // Prefer any direct URL/path field on the object
-    const direct = obj.url || obj.href || obj.path || obj.fullPath || obj.canonicalUrl || '';
-    if (direct.startsWith('http')) return direct;
-    if (direct.startsWith('/')) return `https://www.gymshark.com${direct}`;
-    // Use slug + category context to build URL
-    const slug = obj.slug || obj.handle || '';
-    if (!slug) return '';
-    const cat = catSlug || obj.category?.slug || obj.categories?.[0]?.slug || '';
-    return cat
-      ? `https://www.gymshark.com/blog/category/${cat}/${slug}`
-      : `https://www.gymshark.com/blog/${slug}`;
-  }
-
-  function walk(obj, depth) {
-    if (depth > 14 || !obj || typeof obj !== 'object') return;
-    if (Array.isArray(obj)) { obj.forEach(v => walk(v, depth + 1)); return; }
-
-    const slug = obj.slug || obj.handle || '';
-    const rawDate = obj.publishDate || obj.publishedDate || obj.publishedAt || obj.date || '';
-    if (rawDate && obj.title && slug) {
-      const ms = new Date(rawDate).getTime();
-      const link = articleUrl(obj, category);
-      if (!isNaN(ms) && ms >= cut && link && !seen.has(link)) {
-        seen.add(link);
-        articles.push({ title: obj.title, date: msToDate(ms), source: 'blog', url: link, ms });
+  try {
+    const data = JSON.parse(ndm[1]);
+    function walk(obj, depth) {
+      if (depth > 14 || !obj || typeof obj !== 'object') return;
+      if (Array.isArray(obj)) { obj.forEach(v => walk(v, depth + 1)); return; }
+      const slug = obj.slug || obj.handle || '';
+      const rawDate = obj.publishDate || obj.publishedDate || obj.publishedAt || obj.date || '';
+      if (rawDate && obj.title && slug) {
+        const ms = new Date(rawDate).getTime();
+        // Use actual href from HTML; fall back to /blog/{slug}
+        const href = slugToHref[slug] || `/blog/${slug}`;
+        const url = `https://www.gymshark.com${href}`;
+        if (!isNaN(ms) && ms >= cut && !seen.has(url)) {
+          seen.add(url);
+          articles.push({ title: obj.title, date: msToDate(ms), source: 'blog', url, ms });
+        }
       }
-      // Keep walking — article object may contain nested articles too
+      Object.values(obj).forEach(v => walk(v, depth + 1));
     }
-    Object.values(obj).forEach(v => walk(v, depth + 1));
-  }
-  walk(data, 0);
+    walk(data, 0);
+  } catch {}
+
   return articles;
 }
 
