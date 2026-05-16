@@ -1131,7 +1131,6 @@ let newsFilter = 'all';
 
 const NEWS_SOURCE_LABELS = {
   news:    { label: 'Google News', short: 'News' },
-  blog:    { label: '공식 블로그',  short: '공식' },
   reddit:  { label: 'Reddit',      short: 'Reddit' },
   youtube: { label: 'YouTube',     short: 'YouTube' },
 };

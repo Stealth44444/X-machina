@@ -3,7 +3,7 @@ function cutoff() { return Date.now() - CUTOFF_MS; }
 
 function msToDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
 
-// ── Google News RSS (baseline — known to work) ────────────────────────────
+// ── Google News RSS ──────────────────────────────────────────────────────
 async function fetchGoogleNews() {
   const url = 'https://news.google.com/rss/search?q=gymshark&hl=en-US&gl=US&ceid=US:en';
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } });
@@ -20,40 +20,19 @@ async function fetchGoogleNews() {
     const ms = new Date(block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || 0).getTime();
     if (!title || ms < cut) continue;
     items.push({ title, date: msToDate(ms), source: 'news', ms });
-    if (items.length >= 12) break;
+    if (items.length >= 24) break;
   }
   return items;
 }
 
-// ── Gymshark official blog (Shopify Atom) ─────────────────────────────────
-async function fetchBlog() {
-  const res = await fetch('https://www.gymshark.com/blogs/news.atom', {
-    headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/atom+xml,application/xml,text/xml' },
-  });
-  if (!res.ok) return [];
-  const xml = await res.text();
-  const cut = cutoff();
-  const items = [];
-  for (const m of xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
-    const block = m[1];
-    const title = (
-      block.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ||
-      block.match(/<title[^>]*>([^<]*)<\/title>/)?.[1] || ''
-    ).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
-    const raw = block.match(/<published>(.*?)<\/published>/)?.[1] ||
-                block.match(/<updated>(.*?)<\/updated>/)?.[1] || '';
-    const ms = raw ? new Date(raw).getTime() : 0;
-    if (!title || isNaN(ms) || ms < cut) continue;
-    items.push({ title, date: msToDate(ms), source: 'blog', ms });
-    if (items.length >= 12) break;
-  }
-  return items;
-}
-
-// ── Reddit r/gymshark JSON API ─────────────────────────────────────────────
+// ── Reddit r/gymshark ────────────────────────────────────────────────────
 async function fetchReddit() {
-  const res = await fetch('https://www.reddit.com/r/gymshark/new.json?limit=25', {
-    headers: { 'User-Agent': 'gymspire-news-tool/1.0' },
+  const res = await fetch('https://www.reddit.com/r/gymshark/new.json?limit=25&raw_json=1', {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
   });
   if (!res.ok) return [];
   const data = await res.json();
@@ -100,9 +79,8 @@ export default async function handler(req, res) {
   try {
     const ytKey = process.env.YOUTUBE_API_KEY;
 
-    const [gnews, blog, reddit, youtube] = await Promise.allSettled([
+    const [gnews, reddit, youtube] = await Promise.allSettled([
       fetchGoogleNews(),
-      fetchBlog(),
       fetchReddit(),
       ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
     ]);
@@ -110,7 +88,6 @@ export default async function handler(req, res) {
     const seen = new Set();
     const items = [
       ...(gnews.status === 'fulfilled' ? gnews.value : []),
-      ...(blog.status === 'fulfilled' ? blog.value : []),
       ...(reddit.status === 'fulfilled' ? reddit.value : []),
       ...(youtube.status === 'fulfilled' ? youtube.value : []),
     ]
