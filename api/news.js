@@ -98,25 +98,6 @@ async function fetchBlog() {
   return articles.sort((a, b) => b.ms - a.ms).slice(0, 20);
 }
 
-// ── Reddit r/gymshark ────────────────────────────────────────────────────
-async function fetchReddit() {
-  const res = await fetch('https://www.reddit.com/r/gymshark/new.json?limit=25&raw_json=1', {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept': 'application/json',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
-  });
-  if (!res.ok) return [];
-  const data = await res.json();
-  const cut = cutoff();
-  return (data?.data?.children || []).flatMap(({ data: p }) => {
-    const ms = p.created_utc * 1000;
-    if (!p.title || ms < cut) return [];
-    return [{ title: p.title, date: msToDate(ms), source: 'reddit', url: `https://www.reddit.com${p.permalink}`, ms }];
-  }).slice(0, 12);
-}
-
 // ── YouTube Data API v3 ───────────────────────────────────────────────────
 let ytUploadsId = null;
 
@@ -153,17 +134,15 @@ export default async function handler(req, res) {
   try {
     const ytKey = process.env.YOUTUBE_API_KEY;
 
-    const [gnews, blog, reddit, youtube] = await Promise.allSettled([
+    const [gnews, blog, youtube] = await Promise.allSettled([
       fetchGoogleNews(),
       fetchBlog(),
-      fetchReddit(),
       ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
     ]);
 
     const sourceResults = {
       news:    gnews.status === 'fulfilled'   ? gnews.value   : [],
       blog:    blog.status === 'fulfilled'    ? blog.value    : [],
-      reddit:  reddit.status === 'fulfilled'  ? reddit.value  : [],
       youtube: youtube.status === 'fulfilled' ? youtube.value : [],
     };
     const sourceStatus = Object.fromEntries(

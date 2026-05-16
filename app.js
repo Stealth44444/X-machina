@@ -1157,7 +1157,6 @@ let newsFilter = 'all';
 const NEWS_SOURCE_LABELS = {
   news:    { label: 'Google News', short: 'News' },
   blog:    { label: '공식 블로그',  short: '공식' },
-  reddit:  { label: 'Reddit',      short: 'Reddit' },
   youtube: { label: 'YouTube',     short: 'YouTube' },
 };
 
@@ -1226,7 +1225,7 @@ function renderFullNewsPanel(status) {
   } else if (status === 'error' || !newsCache.items.length) {
     view.innerHTML = header + `<div class="news-view-empty">뉴스를 불러올 수 없습니다</div>`;
   } else {
-    const ALL_SOURCES = ['news', 'blog', 'reddit', 'youtube'];
+    const ALL_SOURCES = ['news', 'blog', 'youtube'];
     const counts = Object.fromEntries(
       ALL_SOURCES.map(s => [s, newsCache.items.filter(i => i.source === s).length])
     );

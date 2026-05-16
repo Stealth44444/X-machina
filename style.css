@@ -964,7 +964,6 @@ body {
 
 .news-card-source--news    { background: #0d1a2a; color: #4a8fd4; }
 .news-card-source--blog    { background: #0a1f10; color: #4caf70; }
-.news-card-source--reddit  { background: #1f1208; color: #d4773a; }
 .news-card-source--youtube { background: #1a0a0a; color: #e05555; }
 
 /* ── Unified active state for all panel toggle buttons ───────────────────── */
