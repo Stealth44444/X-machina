@@ -689,8 +689,6 @@ const AI_TONE_GUIDES = {
 
 let aiPendingSlides = null;
 
-function getAiKey() { return localStorage.getItem('gymspire_ai_key') || ''; }
-
 function openAiModal() {
   const modal = document.getElementById('aiModal');
   modal.style.display = 'flex';
@@ -700,15 +698,7 @@ function openAiModal() {
   document.getElementById('aiGenerate').textContent = '생성하기';
   document.getElementById('aiGenerate').disabled = false;
   aiPendingSlides = null;
-  if (getAiKey()) {
-    document.getElementById('aiKeyScreen').style.display = 'none';
-    document.getElementById('aiGenScreen').style.display = '';
-    setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
-  } else {
-    document.getElementById('aiKeyScreen').style.display = '';
-    document.getElementById('aiGenScreen').style.display = 'none';
-    setTimeout(() => document.getElementById('aiKeyInput').focus(), 30);
-  }
+  setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
 }
 
 function buildAiPrompt(template, keyword, tone, slideCount) {
@@ -784,7 +774,6 @@ async function runAiGenerate() {
   const template = getTemplate(state.templateId);
   const selectedCount = parseInt(document.querySelector('.ai-count-btn.active')?.dataset.count || '4');
   const slideCount = Math.min(selectedCount, template.maxSlides || 8);
-  const key = getAiKey();
   const btn = document.getElementById('aiGenerate');
 
   btn.disabled = true;
@@ -795,9 +784,9 @@ async function runAiGenerate() {
 
   try {
     const { systemMsg, userMsg } = buildAiPrompt(template, keyword, tone, slideCount);
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [
@@ -873,26 +862,6 @@ function initAiModal() {
   });
   document.getElementById('aiModal').addEventListener('click', e => {
     if (e.target === e.currentTarget) document.getElementById('aiModal').style.display = 'none';
-  });
-  document.getElementById('aiKeySave').addEventListener('click', () => {
-    const val = document.getElementById('aiKeyInput').value.trim();
-    if (!val) return;
-    localStorage.setItem('gymspire_ai_key', val);
-    document.getElementById('aiKeyScreen').style.display = 'none';
-    document.getElementById('aiGenScreen').style.display = '';
-    setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
-  });
-  document.getElementById('aiKeyCancel').addEventListener('click', () => {
-    document.getElementById('aiModal').style.display = 'none';
-  });
-  document.getElementById('aiKeyInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('aiKeySave').click();
-  });
-  document.getElementById('aiKeyChange').addEventListener('click', () => {
-    document.getElementById('aiGenScreen').style.display = 'none';
-    document.getElementById('aiKeyScreen').style.display = '';
-    document.getElementById('aiKeyInput').value = '';
-    setTimeout(() => document.getElementById('aiKeyInput').focus(), 30);
   });
   document.getElementById('aiGenerate').addEventListener('click', runAiGenerate);
   document.getElementById('aiApplyBtn').addEventListener('click', applyAiSlides);
