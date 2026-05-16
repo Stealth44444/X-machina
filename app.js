@@ -584,13 +584,29 @@ function renderEditor() {
   const canRemove = state.slideIndex > 0 && state.slides.length > 1;
   const slideInfo = `<div class="slide-info">
     <span>SLIDE ${state.slideIndex + 1} / ${state.slides.length}</span>
-    ${canRemove ? `<button class="remove-slide-btn" id="removeSlideBtn">× 삭제</button>` : ''}
+    <div class="slide-info-actions">
+      <button class="slide-regen-inline-btn" id="slideRegenInlineBtn">↻ 재생성</button>
+      ${canRemove ? `<button class="remove-slide-btn" id="removeSlideBtn">× 삭제</button>` : ''}
+    </div>
   </div>`;
 
   fieldsEl.innerHTML = slideInfo + visibleFields.map(f => renderField(f, slideState[f.key] ?? f.default, slideState)).join('');
 
   const removeBtn = document.getElementById('removeSlideBtn');
   if (removeBtn) removeBtn.addEventListener('click', removeCurrentSlide);
+
+  const regenInlineBtn = document.getElementById('slideRegenInlineBtn');
+  if (regenInlineBtn) {
+    regenInlineBtn.addEventListener('click', () => {
+      slideRegenTargetIdx = state.slideIndex;
+      document.getElementById('slideRegenTitle').textContent = `슬라이드 ${state.slideIndex + 1} 재생성`;
+      document.getElementById('slideRegenHint').value = '';
+      document.getElementById('slideRegenBtn').disabled = false;
+      document.getElementById('slideRegenBtn').textContent = '재생성';
+      document.getElementById('slideRegenModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('slideRegenHint').focus(), 30);
+    });
+  }
 
   const pickerEl = fieldsEl.querySelector('.pos-picker');
   if (pickerEl) {
@@ -1019,9 +1035,16 @@ function openAiModal() {
   document.getElementById('aiGenerate').style.display = '';
   document.getElementById('aiGenerate').textContent = '생성하기';
   document.getElementById('aiGenerate').disabled = false;
+  const slideTargetToggle = document.getElementById('aiSlideTargetToggle');
+  if (slideTargetToggle) {
+    slideTargetToggle.checked = false;
+    document.getElementById('aiSlideTargetField').style.display = 'none';
+    document.getElementById('aiCountField').style.display = '';
+  }
   aiPendingSlides = null;
   aiConversationHistory = [];
   renderAiNewsPreview();
+  renderAiSlideTargetPicker();
   setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
 }
 
@@ -1128,7 +1151,80 @@ JSON만 응답. 다른 텍스트 일절 없음.
   return { systemMsg, userMsg };
 }
 
+function renderAiSlideTargetPicker() {
+  const picker = document.getElementById('aiSlideTargetPicker');
+  if (!picker) return;
+  picker.innerHTML = state.slides.map((_, i) =>
+    `<button class="ai-count-btn${i === state.slideIndex ? ' active' : ''}" data-slide-idx="${i}">${i + 1}번</button>`
+  ).join('');
+  picker.querySelectorAll('.ai-count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      picker.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
+async function runAiSingleSlide(targetIdx) {
+  const keyword = document.getElementById('aiKeyword').value.trim();
+  if (!keyword) { document.getElementById('aiKeyword').focus(); return; }
+  const template = getTemplate(state.templateId);
+  const btn = document.getElementById('aiGenerate');
+  btn.disabled = true;
+  btn.textContent = '생성 중...';
+  const keys = (template.fieldsForSlide ? template.fieldsForSlide(targetIdx) : template.fields.map(f => f.key))
+    .filter(k => k !== 'bgImage');
+  const fieldDescs = keys.map(k => {
+    const def = template.fields.find(f => f.key === k);
+    return `- ${k}: ${def?.label || k}`;
+  }).join('\n');
+  const contextSlides = state.slides.map((s, i) => {
+    const vals = keys.map(k => `${k}: ${s[k] || ''}`).join(', ');
+    return `슬라이드 ${i + 1}: ${vals}`;
+  }).join('\n');
+  const systemMsg = `당신은 짐샤크(Gymshark) 한국 공식 인스타그램 @gymspire.kr의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.`;
+  const userMsg = `수정 요청: ${keyword}\n\n현재 카드뉴스 맥락:\n${contextSlides}\n\n슬라이드 ${targetIdx + 1}번만 재생성해주세요.\n\n필드 목록:\n${fieldDescs}\n\nJSON만 응답. { ${keys.map(k => `"${k}": "값"`).join(', ')} }`;
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemMsg },
+          { role: 'user', content: userMsg },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.80,
+        max_tokens: 2000,
+      }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    const slideState = state.slides[targetIdx];
+    keys.forEach(k => { if (parsed[k] !== undefined) slideState[k] = parsed[k]; });
+    renderCanvas();
+    renderFilmstrip();
+    renderEditor();
+    pushHistory();
+    document.getElementById('aiModal').style.display = 'none';
+  } catch (err) {
+    alert(`재생성 실패: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '수정하기';
+  }
+}
+
 async function runAiGenerate() {
+  const slideTargetToggle = document.getElementById('aiSlideTargetToggle');
+  if (slideTargetToggle?.checked) {
+    const activeBtn = document.getElementById('aiSlideTargetPicker')?.querySelector('.ai-count-btn.active');
+    const targetIdx = activeBtn ? parseInt(activeBtn.dataset.slideIdx) : 0;
+    await runAiSingleSlide(targetIdx);
+    return;
+  }
   const keyword = document.getElementById('aiKeyword').value.trim();
   if (!keyword) { document.getElementById('aiKeyword').focus(); return; }
 
@@ -1281,6 +1377,8 @@ function applyAiSlides() {
   renderEditor();
   renderCanvas();
   pushHistory();
+  const titleName = aiPendingSlides[0]?.title;
+  savePreset(titleName || undefined);
 }
 
 function initAiModal() {
@@ -1329,6 +1427,15 @@ function initAiModal() {
   document.getElementById('aiClose').classList.add('ai-btn', 'ai-btn-ghost');
   const newsToggle = document.getElementById('aiNewsToggle');
   if (newsToggle) newsToggle.addEventListener('change', renderAiNewsPreview);
+  const slideTargetToggle = document.getElementById('aiSlideTargetToggle');
+  if (slideTargetToggle) {
+    slideTargetToggle.addEventListener('change', () => {
+      const on = slideTargetToggle.checked;
+      document.getElementById('aiSlideTargetField').style.display = on ? '' : 'none';
+      document.getElementById('aiCountField').style.display = on ? 'none' : '';
+      document.getElementById('aiGenerate').textContent = on ? '수정하기' : (aiPendingSlides ? '다시 생성' : '생성하기');
+    });
+  }
 }
 
 // ── Presets ──────────────────────────────────────────────────────────────────
@@ -1337,12 +1444,12 @@ function getPresets() {
   try { return JSON.parse(localStorage.getItem('gymspire_presets') || '[]'); } catch { return []; }
 }
 
-function savePreset() {
+function savePreset(nameOverride) {
   const template = getTemplate(state.templateId);
   const now = new Date();
   const hhmm = now.toTimeString().slice(0, 5);
   const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
-  const name = `${template.name} ${mmdd} ${hhmm}`;
+  const name = nameOverride || `${template.name} ${mmdd} ${hhmm}`;
   const presets = getPresets();
   presets.unshift({
     id: Date.now(),
