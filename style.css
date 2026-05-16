@@ -52,6 +52,12 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 0 20px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#fields::-webkit-scrollbar {
+  display: none;
 }
 
 .editor-panel .export-btn {
@@ -1389,6 +1395,7 @@ body {
 .text-style-panel {
   padding: 12px 20px 16px;
   border-bottom: 1px solid #1e1e1e;
+  overflow: hidden;
 }
 
 .text-style-header {
@@ -1444,6 +1451,7 @@ body {
   letter-spacing: 0.5px;
   min-width: 36px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .ts-ctrl {
@@ -1451,6 +1459,7 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
 }
 
 .ts-step-btn {
@@ -1492,6 +1501,7 @@ body {
 
 .text-style-range {
   flex: 1;
+  min-width: 0;
   -webkit-appearance: none;
   appearance: none;
   height: 2px;

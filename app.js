@@ -80,7 +80,7 @@ function applyTextStyles(container, slideState, showSelection) {
     const color = slideState['_color_' + key];
     if (opacity !== undefined) el.style.opacity = opacity / 100;
     if (size !== undefined) el.style.fontSize = size + 'px';
-    if (color) el.style.color = color;
+    el.style.color = color || '';
     if (showSelection) {
       el.classList.toggle('drag-selected', key === state.selectedDragKey);
     }
