@@ -910,6 +910,52 @@ body {
   color: #555;
 }
 
+.news-filter-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.news-filter-btn {
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid #1e1e1e;
+  border-radius: 20px;
+  color: #444;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.news-filter-btn:hover { border-color: #555; color: #aaa; }
+
+.news-filter-btn.active {
+  border-color: #2B9BF4;
+  color: #2B9BF4;
+  background: rgba(43,155,244,0.07);
+}
+
+.news-card-source {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-bottom: 10px;
+}
+
+.news-card-source--blog    { background: #0a1f10; color: #4caf70; }
+.news-card-source--reddit  { background: #1f1208; color: #d4773a; }
+.news-card-source--youtube { background: #1a0a0a; color: #e05555; }
+
 .news-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

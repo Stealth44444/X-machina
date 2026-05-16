@@ -1127,6 +1127,13 @@ const newsCache = { items: [], fetchedAt: 0 };
 const NEWS_CACHE_TTL = 30 * 60 * 1000;
 const NEWS_PER_PAGE = 8;
 let newsPage = 0;
+let newsFilter = 'all';
+
+const NEWS_SOURCE_LABELS = {
+  blog:    { label: '공식 블로그', short: '공식' },
+  reddit:  { label: 'Reddit',     short: 'Reddit' },
+  youtube: { label: 'YouTube',    short: 'YouTube' },
+};
 
 function setMode(mode) {
   state.appMode = mode;
@@ -1192,20 +1199,37 @@ function renderFullNewsPanel(status) {
   } else if (status === 'error' || !newsCache.items.length) {
     view.innerHTML = header + `<div class="news-view-empty">뉴스를 불러올 수 없습니다</div>`;
   } else {
-    const total = newsCache.items.length;
-    const totalPages = Math.ceil(total / NEWS_PER_PAGE);
+    const sources = ['blog', 'reddit', 'youtube'];
+    const counts = Object.fromEntries(
+      sources.map(s => [s, newsCache.items.filter(i => i.source === s).length])
+    );
+    const filtered = newsFilter === 'all'
+      ? newsCache.items
+      : newsCache.items.filter(i => i.source === newsFilter);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / NEWS_PER_PAGE));
     newsPage = Math.min(newsPage, totalPages - 1);
-    const pageItems = newsCache.items.slice(newsPage * NEWS_PER_PAGE, (newsPage + 1) * NEWS_PER_PAGE);
+    const pageItems = filtered.slice(newsPage * NEWS_PER_PAGE, (newsPage + 1) * NEWS_PER_PAGE);
 
-    view.innerHTML = header + `
+    const filterTabs = `
+      <div class="news-filter-tabs">
+        <button class="news-filter-btn ${newsFilter === 'all' ? 'active' : ''}" data-filter="all">전체 (${newsCache.items.length})</button>
+        ${sources.filter(s => counts[s] > 0).map(s => `
+          <button class="news-filter-btn ${newsFilter === s ? 'active' : ''}" data-filter="${s}">
+            ${NEWS_SOURCE_LABELS[s].short} (${counts[s]})
+          </button>
+        `).join('')}
+      </div>`;
+
+    view.innerHTML = header + filterTabs + `
       <div class="news-cards-grid">
-        ${pageItems.map(item => `
+        ${pageItems.length ? pageItems.map(item => `
           <div class="news-card" data-title="${escHtml(item.title)}">
+            <span class="news-card-source news-card-source--${item.source}">${NEWS_SOURCE_LABELS[item.source]?.label || item.source}</span>
             <div class="news-card-title">${escHtml(item.title)}</div>
             <div class="news-card-date">${escHtml(item.date)}</div>
-            <button class="news-card-btn">이 뉴스로 포스트 생성 →</button>
+            <button class="news-card-btn">이 소재로 포스트 생성 →</button>
           </div>
-        `).join('')}
+        `).join('') : `<div style="grid-column:1/-1;padding:40px 0;font-size:13px;color:#333;text-align:center;">해당 소스의 최근 뉴스가 없습니다</div>`}
       </div>
       ${totalPages > 1 ? `
       <div class="news-pagination">
@@ -1222,10 +1246,13 @@ function renderFullNewsPanel(status) {
     });
   }
 
-  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => { newsPage = 0; fetchGymsharkNews(true); });
+  document.getElementById('newsRefreshBtn')?.addEventListener('click', () => { newsPage = 0; newsFilter = 'all'; fetchGymsharkNews(true); });
   document.getElementById('newsBackBtn')?.addEventListener('click', () => setMode('edit'));
   document.getElementById('newsPrevBtn')?.addEventListener('click', () => { newsPage--; renderFullNewsPanel(); });
   document.getElementById('newsNextBtn')?.addEventListener('click', () => { newsPage++; renderFullNewsPanel(); });
+  view.querySelectorAll('.news-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => { newsFilter = btn.dataset.filter; newsPage = 0; renderFullNewsPanel(); });
+  });
 }
 
 function renderAiNewsPreview() {
