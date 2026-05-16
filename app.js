@@ -43,7 +43,18 @@ window.contentSlide = function(s, idx, total) {
 
 function buildBgHtml(s) {
   const img = s.bgImage;
-  if (!img) return '';
+  if (!img) return `
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:48px;pointer-events:none;">
+      <svg width="180" height="180" viewBox="0 0 24 24" fill="none" stroke="#484848" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <path d="M21 15l-5-5L5 21"/>
+      </svg>
+      <div style="text-align:center;">
+        <div style="font-size:52px;font-weight:400;color:#555;letter-spacing:-0.5px;margin-bottom:24px;">배경 이미지를 추가하세요</div>
+        <div style="font-size:28px;font-weight:400;color:#666;letter-spacing:1px;">우측 패널 → 이미지 업로드</div>
+      </div>
+    </div>`;
   const pos = `${s.bgPosX ?? 50}% ${s.bgPosY ?? 50}%`;
   return `<div class="bg-layer" style="position:absolute;inset:0;background-image:url(${img});background-size:cover;background-position:${pos};"></div>`;
 }
@@ -157,7 +168,7 @@ function init() {
   window.addEventListener('resize', scaleCanvas);
   renderGallery();
   renderPinterest();
-  loadTemplate('motivation');
+  loadTemplate('cardnews');
   document.getElementById('exportBtn').addEventListener('click', exportPng);
   document.getElementById('exportAllBtn').addEventListener('click', exportAllPng);
   document.getElementById('savePresetBtn').addEventListener('click', savePreset);
