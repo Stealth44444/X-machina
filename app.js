@@ -182,6 +182,14 @@ function init() {
   });
   initAiModal();
   renderPresets();
+  fetchGymsharkNews();
+  document.getElementById('newsToggle').addEventListener('click', () => {
+    const list = document.getElementById('newsList');
+    const btn = document.getElementById('newsToggle');
+    const hidden = list.style.display === 'none';
+    list.style.display = hidden ? '' : 'none';
+    btn.textContent = hidden ? '−' : '+';
+  });
   document.getElementById('pinterestToggle').addEventListener('click', () => {
     const grid = document.getElementById('keywordGrid');
     const btn = document.getElementById('pinterestToggle');
@@ -789,10 +797,11 @@ function openAiModal() {
   document.getElementById('aiGenerate').textContent = '생성하기';
   document.getElementById('aiGenerate').disabled = false;
   aiPendingSlides = null;
+  renderAiNewsPreview();
   setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
 }
 
-function buildAiPrompt(template, keyword, tone, slideCount, speech, target) {
+function buildAiPrompt(template, keyword, tone, slideCount, speech, target, newsItems) {
   const slideDescs = Array.from({ length: slideCount }, (_, i) => {
     const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
       .filter(k => k !== 'bgImage');
@@ -867,7 +876,11 @@ ${AI_TONE_GUIDES[tone]}
 ${AI_SPEECH_GUIDES[speech] || AI_SPEECH_GUIDES.friendly}
 ${AI_TARGET_GUIDES[target] || AI_TARGET_GUIDES.all}`;
 
-  const userMsg = `요청 내용: ${keyword}
+  const newsContext = (newsItems && newsItems.length > 0)
+    ? `\n## 최신 Gymshark 뉴스 헤드라인 (관련 있으면 콘텐츠에 자연스럽게 반영, 무관하면 무시)\n${newsItems.slice(0, 5).map(n => `- ${n.title} (${n.date})`).join('\n')}\n`
+    : '';
+
+  const userMsg = `요청 내용: ${keyword}${newsContext}
 템플릿 유형: ${template.name}
 생성할 슬라이드 수: 정확히 ${slideCount}개
 
@@ -896,6 +909,8 @@ async function runAiGenerate() {
   const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
   const speech = document.querySelector('.ai-speech-btn.active')?.dataset.speech || 'friendly';
   const target = document.querySelector('.ai-target-btn.active')?.dataset.target || 'all';
+  const useNews = document.getElementById('aiNewsToggle')?.checked !== false;
+  const newsItems = useNews && newsCache.items.length > 0 ? newsCache.items : null;
   const template = getTemplate(state.templateId);
   const selectedCount = parseInt(document.querySelector('.ai-count-btn.active')?.dataset.count || '4');
   const slideCount = Math.min(selectedCount, template.maxSlides || 8);
@@ -908,7 +923,7 @@ async function runAiGenerate() {
   aiPendingSlides = null;
 
   try {
-    const { systemMsg, userMsg } = buildAiPrompt(template, keyword, tone, slideCount, speech, target);
+    const { systemMsg, userMsg } = buildAiPrompt(template, keyword, tone, slideCount, speech, target, newsItems);
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1020,6 +1035,8 @@ function initAiModal() {
   document.getElementById('aiGenerate').classList.add('ai-btn', 'ai-btn-primary');
   document.getElementById('aiApplyBtn').classList.add('ai-btn', 'ai-btn-ghost');
   document.getElementById('aiClose').classList.add('ai-btn', 'ai-btn-ghost');
+  const newsToggle = document.getElementById('aiNewsToggle');
+  if (newsToggle) newsToggle.addEventListener('change', renderAiNewsPreview);
 }
 
 // ── Presets ──────────────────────────────────────────────────────────────────
@@ -1101,6 +1118,72 @@ function renderPresets() {
   list.querySelectorAll('.preset-delete').forEach(btn => {
     btn.addEventListener('click', () => deletePreset(parseInt(btn.dataset.id)));
   });
+}
+
+// ── News Panel ───────────────────────────────────────────────────────────────
+
+const newsCache = { items: [], fetchedAt: 0 };
+const NEWS_CACHE_TTL = 30 * 60 * 1000;
+
+async function fetchGymsharkNews() {
+  const now = Date.now();
+  if (newsCache.items.length > 0 && now - newsCache.fetchedAt < NEWS_CACHE_TTL) {
+    renderNewsPanel();
+    return;
+  }
+  renderNewsPanel('loading');
+  try {
+    const rssUrl = encodeURIComponent('https://news.google.com/rss/search?q=gymshark&hl=en-US&gl=US&ceid=US:en');
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}&count=8`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message || 'RSS error');
+    newsCache.items = (data.items || []).map(item => ({
+      title: item.title.replace(/\s*-\s*[^-]+$/, '').trim(),
+      link: item.link,
+      date: (item.pubDate || '').slice(0, 10),
+    }));
+    newsCache.fetchedAt = now;
+    renderNewsPanel();
+    renderAiNewsPreview();
+  } catch {
+    renderNewsPanel('error');
+  }
+}
+
+function renderNewsPanel(status) {
+  const list = document.getElementById('newsList');
+  if (!list) return;
+  if (status === 'loading') {
+    list.innerHTML = `<div class="news-status">불러오는 중...</div>`;
+    return;
+  }
+  if (status === 'error' || !newsCache.items.length) {
+    list.innerHTML = `<div class="news-status">뉴스를 불러올 수 없습니다</div>`;
+    return;
+  }
+  list.innerHTML = newsCache.items.map(item => `
+    <div class="news-item" data-title="${escHtml(item.title)}">
+      <div class="news-item-title">${escHtml(item.title)}</div>
+      <div class="news-item-meta">${escHtml(item.date)}</div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.news-item').forEach(el => {
+    el.addEventListener('click', () => {
+      document.getElementById('aiKeyword').value = el.dataset.title;
+      openAiModal();
+    });
+  });
+}
+
+function renderAiNewsPreview() {
+  const wrap = document.getElementById('aiNewsPreview');
+  if (!wrap) return;
+  const on = document.getElementById('aiNewsToggle')?.checked;
+  if (!on || !newsCache.items.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = newsCache.items.slice(0, 4).map(n =>
+    `<span class="ai-news-chip">${escHtml(n.title)}</span>`
+  ).join('');
 }
 
 // ── Task 10: Pinterest Quick Links ──────────────────────────────────────────

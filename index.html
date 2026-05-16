@@ -21,6 +21,13 @@
         <p class="section-label">SAVED</p>
         <div id="presetList"></div>
       </div>
+      <div class="sidebar-section news-section">
+        <div class="section-header">
+          <p class="section-label">NEWS</p>
+          <button class="section-toggle" id="newsToggle">−</button>
+        </div>
+        <div id="newsList"></div>
+      </div>
       <div class="sidebar-section pinterest-section">
         <div class="section-header">
           <p class="section-label">PINTEREST</p>
@@ -101,6 +108,17 @@
                 <button class="ai-target-btn" data-target="women">여성향</button>
                 <button class="ai-target-btn" data-target="men">남성향</button>
               </div>
+            </div>
+
+            <div class="ai-field ai-field--full">
+              <div class="ai-news-toggle-row">
+                <label class="ai-label" style="margin:0">최신 뉴스 컨텍스트 반영</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="aiNewsToggle" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div id="aiNewsPreview" class="ai-news-preview"></div>
             </div>
 
             <div class="ai-field ai-field--full">
