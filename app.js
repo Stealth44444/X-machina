@@ -1133,16 +1133,11 @@ async function fetchGymsharkNews() {
   }
   renderNewsPanel('loading');
   try {
-    const rssUrl = encodeURIComponent('https://news.google.com/rss/search?q=gymshark&hl=en-US&gl=US&ceid=US:en');
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}&count=8`);
+    const res = await fetch('/api/news');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (data.status !== 'ok') throw new Error(data.message || 'RSS error');
-    newsCache.items = (data.items || []).map(item => ({
-      title: item.title.replace(/\s*-\s*[^-]+$/, '').trim(),
-      link: item.link,
-      date: (item.pubDate || '').slice(0, 10),
-    }));
+    if (data.error) throw new Error(data.error);
+    newsCache.items = data.items || [];
     newsCache.fetchedAt = now;
     renderNewsPanel();
     renderAiNewsPreview();
