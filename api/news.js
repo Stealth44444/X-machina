@@ -85,12 +85,17 @@ export default async function handler(req, res) {
       ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
     ]);
 
+    const sourceResults = {
+      news:    gnews.status === 'fulfilled'   ? gnews.value    : [],
+      reddit:  reddit.status === 'fulfilled'  ? reddit.value   : [],
+      youtube: youtube.status === 'fulfilled' ? youtube.value  : [],
+    };
+    const sourceStatus = Object.fromEntries(
+      Object.entries(sourceResults).map(([k, v]) => [k, { ok: v.length > 0, count: v.length }])
+    );
+
     const seen = new Set();
-    const items = [
-      ...(gnews.status === 'fulfilled' ? gnews.value : []),
-      ...(reddit.status === 'fulfilled' ? reddit.value : []),
-      ...(youtube.status === 'fulfilled' ? youtube.value : []),
-    ]
+    const items = Object.values(sourceResults).flat()
       .sort((a, b) => b.ms - a.ms)
       .filter(item => {
         const key = item.title.toLowerCase().slice(0, 40);
@@ -100,7 +105,7 @@ export default async function handler(req, res) {
       })
       .map(({ ms, ...rest }) => rest);
 
-    res.status(200).json({ items });
+    res.status(200).json({ items, sources: sourceStatus });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

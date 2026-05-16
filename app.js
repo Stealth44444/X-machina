@@ -1123,7 +1123,7 @@ function renderPresets() {
 
 // ── News Panel ───────────────────────────────────────────────────────────────
 
-const newsCache = { items: [], fetchedAt: 0 };
+const newsCache = { items: [], sources: {}, fetchedAt: 0 };
 const NEWS_CACHE_TTL = 30 * 60 * 1000;
 const NEWS_PER_PAGE = 8;
 let newsPage = 0;
@@ -1169,6 +1169,7 @@ async function fetchGymsharkNews(forceRefresh) {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     newsCache.items = data.items || [];
+    newsCache.sources = data.sources || {};
     newsCache.fetchedAt = now;
     if (state.appMode === 'news') renderFullNewsPanel();
     renderAiNewsPreview();
@@ -1199,9 +1200,9 @@ function renderFullNewsPanel(status) {
   } else if (status === 'error' || !newsCache.items.length) {
     view.innerHTML = header + `<div class="news-view-empty">뉴스를 불러올 수 없습니다</div>`;
   } else {
-    const sources = ['blog', 'reddit', 'youtube'];
+    const ALL_SOURCES = ['news', 'reddit', 'youtube'];
     const counts = Object.fromEntries(
-      sources.map(s => [s, newsCache.items.filter(i => i.source === s).length])
+      ALL_SOURCES.map(s => [s, newsCache.items.filter(i => i.source === s).length])
     );
     const filtered = newsFilter === 'all'
       ? newsCache.items
@@ -1213,11 +1214,15 @@ function renderFullNewsPanel(status) {
     const filterTabs = `
       <div class="news-filter-tabs">
         <button class="news-filter-btn ${newsFilter === 'all' ? 'active' : ''}" data-filter="all">전체 (${newsCache.items.length})</button>
-        ${sources.filter(s => counts[s] > 0).map(s => `
-          <button class="news-filter-btn ${newsFilter === s ? 'active' : ''}" data-filter="${s}">
-            ${NEWS_SOURCE_LABELS[s].short} (${counts[s]})
-          </button>
-        `).join('')}
+        ${ALL_SOURCES.map(s => {
+          const src = newsCache.sources[s];
+          const failed = src && !src.ok;
+          const label = NEWS_SOURCE_LABELS[s]?.short || s;
+          return `<button class="news-filter-btn ${newsFilter === s ? 'active' : ''} ${failed ? 'failed' : ''}"
+            data-filter="${s}" ${failed ? 'title="현재 연결 불가"' : ''}>
+            ${label}${src ? ` (${counts[s]})` : ''}
+          </button>`;
+        }).join('')}
       </div>`;
 
     view.innerHTML = header + filterTabs + `

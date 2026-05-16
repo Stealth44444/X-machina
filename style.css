@@ -941,6 +941,16 @@ body {
   background: rgba(43,155,244,0.07);
 }
 
+.news-filter-btn.failed {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.news-filter-btn.failed:hover {
+  border-color: #1e1e1e;
+  color: #444;
+}
+
 .news-card-source {
   display: inline-block;
   font-size: 9px;
