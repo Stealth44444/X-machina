@@ -527,7 +527,15 @@ function renderTextStylePanel() {
     </div>
     <div class="text-style-row">
       <label class="field-label">크기 (px)</label>
-      <input type="number" class="field-input text-style-num" id="fontSizeInput" min="8" max="400" value="${size}" placeholder="기본값">
+      <div class="text-style-slider-row">
+        <input type="range" class="text-style-range" id="fontSizeRange" min="8" max="240" value="${size || 60}">
+        <span class="text-style-val" id="fontSizeVal">${size || '기본'}</span>
+      </div>
+      <div class="font-size-stepper">
+        <button class="font-size-step-btn" id="fontSizeMinus">−</button>
+        <button class="font-size-step-btn" id="fontSizePlus">＋</button>
+        <button class="font-size-step-btn font-size-reset-btn" id="fontSizeReset">초기화</button>
+      </div>
     </div>
   `;
 
@@ -546,16 +554,33 @@ function renderTextStylePanel() {
     pushHistoryDebounced();
   });
 
-  document.getElementById('fontSizeInput').addEventListener('input', e => {
-    const val = parseInt(e.target.value);
+  function applySize(val) {
     if (!isNaN(val) && val >= 8) {
       slideState['_size_' + key] = val;
+      document.getElementById('fontSizeRange').value = Math.min(val, 240);
+      document.getElementById('fontSizeVal').textContent = val + 'px';
     } else {
       delete slideState['_size_' + key];
+      document.getElementById('fontSizeVal').textContent = '기본';
     }
     applyTextStyles(document.getElementById('canvas'), slideState, true);
     renderFilmstrip();
     pushHistoryDebounced();
+  }
+
+  document.getElementById('fontSizeRange').addEventListener('input', e => {
+    applySize(parseInt(e.target.value));
+  });
+  document.getElementById('fontSizeMinus').addEventListener('click', () => {
+    const cur = slideState['_size_' + key] ?? parseInt(document.getElementById('fontSizeRange').value);
+    applySize(Math.max(8, cur - 2));
+  });
+  document.getElementById('fontSizePlus').addEventListener('click', () => {
+    const cur = slideState['_size_' + key] ?? parseInt(document.getElementById('fontSizeRange').value);
+    applySize(cur + 2);
+  });
+  document.getElementById('fontSizeReset').addEventListener('click', () => {
+    applySize(null);
   });
 }
 

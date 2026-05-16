@@ -1354,3 +1354,32 @@ body {
   padding: 6px 10px;
   font-size: 13px;
 }
+
+.font-size-stepper {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.font-size-step-btn {
+  flex: 1;
+  padding: 6px 0;
+  background: none;
+  border: 1px solid #2a2a2a;
+  color: #888;
+  font-size: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.font-size-step-btn:hover {
+  border-color: #555;
+  color: #fff;
+}
+
+.font-size-reset-btn {
+  font-size: 10px;
+  color: #555;
+  letter-spacing: 0.5px;
+}
