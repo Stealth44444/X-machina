@@ -2,6 +2,10 @@ const state = {
   templateId: 'motivation',
   slideIndex: 0,
   slides: [{}],
+  outroImage: '',
+  outroPosX: 50,
+  outroPosY: 50,
+  selectedDragKey: null,
 };
 
 function getTemplate(id) {
@@ -10,17 +14,17 @@ function getTemplate(id) {
 
 window.outroSlide = function() {
   return `
-    <div style="position:absolute;inset:0;background:#000;"></div>
-    <div style="position:absolute;top:48px;left:0;right:0;text-align:center;font-size:20px;font-weight:700;letter-spacing:4px;color:rgba(255,255,255,0.5);">GYMSPIRE</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.75) 60%,#000 100%);"></div>
+    <img src="./gymspire-logo.png" style="position:absolute;top:28px;left:50%;transform:translateX(-50%);height:130px;mix-blend-mode:multiply;opacity:0.6;pointer-events:none;">
     <div style="position:absolute;top:50%;left:56px;right:56px;transform:translateY(-55%);">
-      <div style="font-size:48px;margin-bottom:24px;">🇰🇷</div>
-      <div style="font-size:20px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:1.5px;margin-bottom:20px;">No.1 'GYMSHARK' 전문 커뮤니티</div>
-      <div style="font-size:68px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:36px;letter-spacing:-1px;">운동은<br>멈추지 않는다</div>
-      <div style="font-size:28px;font-weight:400;color:rgba(255,255,255,0.5);line-height:1.6;">팔로우하고 짐샤크를 경험해봐<br>링크에서 국내배송 바로 가능</div>
+      <div style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1px;margin-bottom:28px;">🇰🇷 &nbsp;No.1 GYMSHARK 전문 커뮤니티</div>
+      <div style="font-size:72px;font-weight:900;color:#fff;line-height:1.05;margin-bottom:36px;letter-spacing:-2px;">Bad day?<br>Go gym.</div>
+      <div style="width:48px;height:3px;background:#2B9BF4;margin-bottom:36px;"></div>
+      <div style="font-size:28px;font-weight:400;color:rgba(255,255,255,0.45);line-height:1.7;">국내배송 · 최신 컬렉션 · 착용 정보<br>팔로우하면 다 보입니다</div>
     </div>
     <div style="position:absolute;bottom:90px;left:56px;">
-      <div style="font-size:36px;font-weight:900;color:#2B9BF4;letter-spacing:2px;">@GYMSPIRE</div>
-      <div style="font-size:20px;font-weight:400;color:rgba(255,255,255,0.25);margin-top:10px;letter-spacing:1px;">FOLLOW · LINK IN BIO</div>
+      <div style="font-size:34px;font-weight:900;color:#2B9BF4;letter-spacing:1px;">@gymspire.kr</div>
+      <div style="font-size:19px;font-weight:400;color:rgba(255,255,255,0.2);margin-top:10px;letter-spacing:2px;">FOLLOW · LINK IN BIO</div>
     </div>
   `;
 };
@@ -28,14 +32,108 @@ window.outroSlide = function() {
 window.contentSlide = function(s, idx, total) {
   const body = (s.body || '').replace(/\*\*(.*?)\*\*/g, '<span style="font-weight:800;color:#fff">$1</span>');
   return `
-    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,0.75) 62%,#000 100%);"></div>
-    <div style="position:absolute;top:40px;right:48px;font-size:18px;font-weight:400;color:rgba(255,255,255,0.2);">${idx}/${total - 1}</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,0.75) 62%,#000 100%);pointer-events:none;"></div>
+    <div style="position:absolute;top:40px;right:48px;font-size:18px;font-weight:400;color:rgba(255,255,255,0.2);pointer-events:none;">${idx}/${total - 1}</div>
     <div style="position:absolute;bottom:120px;left:56px;right:56px;">
-      <div style="font-size:56px;font-weight:800;line-height:1.2;color:#fff;white-space:pre-wrap;margin-bottom:28px;">${s.title || ''}</div>
-      <div style="font-size:34px;font-weight:400;color:rgba(255,255,255,0.78);line-height:1.7;">${body}</div>
+      <div data-drag-key="title" style="font-size:56px;font-weight:800;line-height:1.2;color:#fff;white-space:pre-wrap;margin-bottom:28px;">${s.title || ''}</div>
+      <div data-drag-key="body" style="font-size:36px;font-weight:400;color:rgba(255,255,255,0.90);line-height:1.7;white-space:pre-wrap;">${body}</div>
     </div>
   `;
 };
+
+function buildBgHtml(s) {
+  const img = s.bgImage;
+  if (!img) return '';
+  const pos = `${s.bgPosX ?? 50}% ${s.bgPosY ?? 50}%`;
+  return `<div class="bg-layer" style="position:absolute;inset:0;background-image:url(${img});background-size:cover;background-position:${pos};"></div>`;
+}
+
+function applyDragOffsets(container, slideState) {
+  if (!slideState) return;
+  container.querySelectorAll('[data-drag-key]').forEach(el => {
+    const off = slideState['_pos_' + el.dataset.dragKey] || { x: 0, y: 0 };
+    const base = el.dataset.baseTransform || '';
+    el.style.transform = base ? `${base} translate(${off.x}px,${off.y}px)` : `translate(${off.x}px,${off.y}px)`;
+  });
+}
+
+function applyTextStyles(container, slideState, showSelection) {
+  if (!slideState) return;
+  container.querySelectorAll('[data-drag-key]').forEach(el => {
+    const key = el.dataset.dragKey;
+    const opacity = slideState['_opacity_' + key];
+    const size = slideState['_size_' + key];
+    if (opacity !== undefined) el.style.opacity = opacity / 100;
+    if (size !== undefined) el.style.fontSize = size + 'px';
+    if (showSelection) {
+      el.classList.toggle('drag-selected', key === state.selectedDragKey);
+    }
+  });
+}
+
+function getCanvasScale() {
+  const m = document.getElementById('canvas').style.transform.match(/scale\(([\d.]+)\)/);
+  return m ? parseFloat(m[1]) : 1;
+}
+
+function attachDragHandlers(canvas) {
+  const slideIdx = state.slideIndex;
+  if (slideIdx === state.slides.length) return;
+  const slideState = state.slides[slideIdx];
+
+  canvas.querySelectorAll('[data-drag-key]').forEach(el => {
+    const key = el.dataset.dragKey;
+    el.style.cursor = 'grab';
+    let startX, startY, origX, origY, active = false;
+
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      el.setPointerCapture(e.pointerId);
+      el.style.cursor = 'grabbing';
+      active = true;
+      startX = e.clientX; startY = e.clientY;
+      const stored = slideState['_pos_' + key] || { x: 0, y: 0 };
+      origX = stored.x; origY = stored.y;
+    });
+
+    el.addEventListener('pointermove', e => {
+      if (!active) return;
+      const sc = getCanvasScale();
+      const dx = (e.clientX - startX) / sc, dy = (e.clientY - startY) / sc;
+      const base = el.dataset.baseTransform || '';
+      el.style.transform = base
+        ? `${base} translate(${origX + dx}px,${origY + dy}px)`
+        : `translate(${origX + dx}px,${origY + dy}px)`;
+    });
+
+    el.addEventListener('pointerup', e => {
+      if (!active) return;
+      active = false;
+      el.style.cursor = 'grab';
+      const sc = getCanvasScale();
+      const dx = (e.clientX - startX) / sc, dy = (e.clientY - startY) / sc;
+      slideState['_pos_' + key] = { x: origX + dx, y: origY + dy };
+      if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+        state.selectedDragKey = key;
+        renderTextStylePanel();
+        applyTextStyles(canvas, slideState, true);
+      }
+      renderFilmstrip();
+      pushHistory();
+    });
+
+    el.addEventListener('pointercancel', () => { active = false; el.style.cursor = 'grab'; });
+
+    el.addEventListener('dblclick', e => {
+      e.preventDefault();
+      delete slideState['_pos_' + key];
+      applyDragOffsets(canvas, slideState);
+      renderFilmstrip();
+      pushHistory();
+    });
+  });
+}
 
 const PINTEREST_KEYWORDS = [
   'Gymshark aesthetic',
@@ -61,6 +159,17 @@ function init() {
   renderPinterest();
   loadTemplate('motivation');
   document.getElementById('exportBtn').addEventListener('click', exportPng);
+  document.getElementById('exportAllBtn').addEventListener('click', exportAllPng);
+  document.getElementById('savePresetBtn').addEventListener('click', savePreset);
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('redoBtn').addEventListener('click', redo);
+  document.addEventListener('keydown', e => {
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+  });
+  initAiModal();
+  renderPresets();
   document.getElementById('pinterestToggle').addEventListener('click', () => {
     const grid = document.getElementById('keywordGrid');
     const btn = document.getElementById('pinterestToggle');
@@ -89,6 +198,7 @@ function loadTemplate(id) {
   if (!template) return;
   state.templateId = id;
   state.slideIndex = 0;
+  state.selectedDragKey = null;
   const count = template.defaultSlides || template.slides || 1;
   state.slides = Array.from({ length: count }, () => {
     const defaults = {};
@@ -99,6 +209,9 @@ function loadTemplate(id) {
   renderFilmstrip();
   renderEditor();
   renderCanvas();
+  history.stack = [snapshotState()];
+  history.index = 0;
+  updateHistoryBtns();
 }
 
 function addSlide() {
@@ -112,6 +225,7 @@ function addSlide() {
   renderFilmstrip();
   renderEditor();
   renderCanvas();
+  pushHistory();
 }
 
 function removeCurrentSlide() {
@@ -123,6 +237,7 @@ function removeCurrentSlide() {
   renderFilmstrip();
   renderEditor();
   renderCanvas();
+  pushHistory();
 }
 
 function renderFilmstrip() {
@@ -131,21 +246,22 @@ function renderFilmstrip() {
   const maxSlides = template.maxSlides || template.slides || 10;
 
   const outroIndex = state.slides.length;
+  const outroS = { bgImage: state.outroImage, bgPosX: state.outroPosX, bgPosY: state.outroPosY };
   const outroItem = `
     <div class="filmstrip-item ${state.slideIndex === outroIndex ? 'active' : ''}" data-index="${outroIndex}">
       <div class="filmstrip-preview-wrap">
-        <div class="filmstrip-preview">${window.outroSlide()}</div>
+        <div class="filmstrip-preview">${buildBgHtml(outroS)}${window.outroSlide()}</div>
       </div>
       <span class="filmstrip-num">END</span>
     </div>
   `;
 
   filmstrip.innerHTML = state.slides.map((slideState, i) => {
-    const bg = slideState.bgImage ? `url(${slideState.bgImage})` : 'none';
     return `
       <div class="filmstrip-item ${i === state.slideIndex ? 'active' : ''}" data-index="${i}">
         <div class="filmstrip-preview-wrap">
-          <div class="filmstrip-preview" style="background-image:${bg}">
+          <div class="filmstrip-preview">
+            ${buildBgHtml(slideState)}
             ${template.render(slideState, i, state.slides.length)}
           </div>
         </div>
@@ -156,8 +272,17 @@ function renderFilmstrip() {
   + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '')
   + outroItem;
 
+  state.slides.forEach((slideState, i) => {
+    const previews = filmstrip.querySelectorAll('.filmstrip-preview');
+    if (previews[i]) {
+      applyDragOffsets(previews[i], slideState);
+      applyTextStyles(previews[i], slideState);
+    }
+  });
+
   filmstrip.querySelectorAll('.filmstrip-item').forEach(item => {
     item.addEventListener('click', () => {
+      state.selectedDragKey = null;
       state.slideIndex = parseInt(item.dataset.index);
       renderFilmstrip();
       renderEditor();
@@ -186,14 +311,40 @@ function scaleCanvas() {
 function renderCanvas() {
   const template = getTemplate(state.templateId);
   const canvas = document.getElementById('canvas');
+  canvas.style.backgroundImage = 'none';
   if (state.slideIndex === state.slides.length) {
-    canvas.style.backgroundImage = 'none';
-    canvas.innerHTML = window.outroSlide();
+    const outroS = { bgImage: state.outroImage, bgPosX: state.outroPosX, bgPosY: state.outroPosY };
+    canvas.innerHTML = buildBgHtml(outroS) + window.outroSlide();
     return;
   }
   const slideState = state.slides[state.slideIndex] || {};
-  canvas.style.backgroundImage = slideState.bgImage ? `url(${slideState.bgImage})` : 'none';
-  canvas.innerHTML = template.render(slideState, state.slideIndex, state.slides.length);
+  canvas.innerHTML = buildBgHtml(slideState) + template.render(slideState, state.slideIndex, state.slides.length);
+  applyDragOffsets(canvas, slideState);
+  applyTextStyles(canvas, slideState, true);
+  attachDragHandlers(canvas);
+}
+
+function attachPosPicker(picker, onMove, onEnd) {
+  let active = false;
+  function calcPos(e) {
+    const rect = picker.getBoundingClientRect();
+    const x = Math.round(Math.max(0, Math.min(100, (e.clientX - rect.left) / rect.width * 100)));
+    const y = Math.round(Math.max(0, Math.min(100, (e.clientY - rect.top) / rect.height * 100)));
+    return { x, y };
+  }
+  function apply(e) {
+    const { x, y } = calcPos(e);
+    onMove(x, y);
+    picker.querySelector('.pos-handle').style.cssText = `left:${x}%;top:${y}%`;
+  }
+  picker.addEventListener('pointerdown', e => {
+    active = true;
+    picker.setPointerCapture(e.pointerId);
+    apply(e);
+  });
+  picker.addEventListener('pointermove', e => { if (active) apply(e); });
+  picker.addEventListener('pointerup', () => { if (active) { active = false; onEnd(); } });
+  picker.addEventListener('pointercancel', () => { active = false; });
 }
 
 function renderEditor() {
@@ -202,7 +353,48 @@ function renderEditor() {
   const slideState = state.slides[state.slideIndex] || {};
 
   if (state.slideIndex === state.slides.length) {
-    fieldsEl.innerHTML = `<div style="padding:20px 0;font-size:11px;color:#444;letter-spacing:1px;line-height:1.8;">고정 아웃트로 슬라이드<br><span style="color:#333;">모든 게시물의 마지막 페이지</span></div>`;
+    const opx = state.outroPosX ?? 50, opy = state.outroPosY ?? 50;
+    const outroPicker = state.outroImage ? `<div class="pos-picker"><div class="pos-handle" style="left:${opx}%;top:${opy}%"></div></div>` : '';
+    fieldsEl.innerHTML = `
+      <div style="padding:16px 0 16px;font-size:10px;font-weight:700;color:#444;letter-spacing:1.5px;text-transform:uppercase;">고정 아웃트로</div>
+      <div class="field-group">
+        <label class="field-label">배경 이미지</label>
+        <button class="field-image-btn ${state.outroImage ? 'has-image' : ''}" id="outroImageBtn">
+          ${state.outroImage ? '✓ 이미지 선택됨' : '+ 이미지 업로드'}
+        </button>
+        ${outroPicker}
+      </div>
+    `;
+    document.getElementById('outroImageBtn').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          state.outroImage = ev.target.result;
+          renderCanvas();
+          renderFilmstrip();
+          renderEditor();
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    });
+    const outroPicEl = fieldsEl.querySelector('.pos-picker');
+    if (outroPicEl) {
+      attachPosPicker(outroPicEl,
+        (x, y) => {
+          state.outroPosX = x;
+          state.outroPosY = y;
+          const bgL = document.querySelector('#canvas .bg-layer');
+          if (bgL) bgL.style.backgroundPosition = `${x}% ${y}%`;
+        },
+        () => renderFilmstrip()
+      );
+    }
     return;
   }
 
@@ -215,10 +407,24 @@ function renderEditor() {
     ${canRemove ? `<button class="remove-slide-btn" id="removeSlideBtn">× 삭제</button>` : ''}
   </div>`;
 
-  fieldsEl.innerHTML = slideInfo + visibleFields.map(f => renderField(f, slideState[f.key] ?? f.default)).join('');
+  fieldsEl.innerHTML = slideInfo + visibleFields.map(f => renderField(f, slideState[f.key] ?? f.default, slideState)).join('');
 
   const removeBtn = document.getElementById('removeSlideBtn');
   if (removeBtn) removeBtn.addEventListener('click', removeCurrentSlide);
+
+  const pickerEl = fieldsEl.querySelector('.pos-picker');
+  if (pickerEl) {
+    const idx = state.slideIndex;
+    attachPosPicker(pickerEl,
+      (x, y) => {
+        state.slides[idx].bgPosX = x;
+        state.slides[idx].bgPosY = y;
+        const bgL = document.querySelector('#canvas .bg-layer');
+        if (bgL) bgL.style.backgroundPosition = `${x}% ${y}%`;
+      },
+      () => renderFilmstrip()
+    );
+  }
 
   fieldsEl.querySelectorAll('.bold-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -256,17 +462,86 @@ function renderEditor() {
         const reader = new FileReader();
         reader.onload = ev => {
           updateField(btn.dataset.key, ev.target.result);
-          btn.textContent = '✓ 이미지 선택됨';
-          btn.classList.add('has-image');
+          renderEditor();
         };
         reader.readAsDataURL(file);
       };
       input.click();
     });
   });
+
+  renderTextStylePanel();
 }
 
-function renderField(field, value) {
+const DRAG_KEY_LABELS = {
+  title: '제목', subtitle: '부제목', body: '본문',
+  discount: '할인율', condition: '조건', period: '기간',
+  cta: 'CTA', price: '가격',
+};
+
+function renderTextStylePanel() {
+  const panel = document.getElementById('textStylePanel');
+  if (!panel) return;
+  const key = state.selectedDragKey;
+  if (!key || state.slideIndex === state.slides.length) {
+    panel.style.display = 'none';
+    panel.className = '';
+    return;
+  }
+  const slideState = state.slides[state.slideIndex] || {};
+  const opacity = slideState['_opacity_' + key] ?? 100;
+  const size = slideState['_size_' + key] ?? '';
+  const label = DRAG_KEY_LABELS[key] || key;
+
+  panel.className = 'text-style-panel';
+  panel.style.display = '';
+  panel.innerHTML = `
+    <div class="text-style-header">
+      <span class="text-style-key">${label}</span>
+      <button class="text-style-close" id="textStyleClose">선택 해제</button>
+    </div>
+    <div class="text-style-row">
+      <label class="field-label">불투명도</label>
+      <div class="text-style-slider-row">
+        <input type="range" class="text-style-range" id="opacityRange" min="0" max="100" value="${opacity}">
+        <span class="text-style-val" id="opacityVal">${opacity}%</span>
+      </div>
+    </div>
+    <div class="text-style-row">
+      <label class="field-label">크기 (px)</label>
+      <input type="number" class="field-input text-style-num" id="fontSizeInput" min="8" max="400" value="${size}" placeholder="기본값">
+    </div>
+  `;
+
+  document.getElementById('textStyleClose').addEventListener('click', () => {
+    state.selectedDragKey = null;
+    renderTextStylePanel();
+    applyTextStyles(document.getElementById('canvas'), slideState, true);
+  });
+
+  document.getElementById('opacityRange').addEventListener('input', e => {
+    const val = parseInt(e.target.value);
+    document.getElementById('opacityVal').textContent = val + '%';
+    slideState['_opacity_' + key] = val;
+    applyTextStyles(document.getElementById('canvas'), slideState, true);
+    renderFilmstrip();
+    pushHistoryDebounced();
+  });
+
+  document.getElementById('fontSizeInput').addEventListener('input', e => {
+    const val = parseInt(e.target.value);
+    if (!isNaN(val) && val >= 8) {
+      slideState['_size_' + key] = val;
+    } else {
+      delete slideState['_size_' + key];
+    }
+    applyTextStyles(document.getElementById('canvas'), slideState, true);
+    renderFilmstrip();
+    pushHistoryDebounced();
+  });
+}
+
+function renderField(field, value, slideState) {
   switch (field.type) {
     case 'text':
       return `<div class="field-group">
@@ -280,16 +555,20 @@ function renderField(field, value) {
           <label class="field-label">${field.label}</label>
           <button class="bold-btn" data-target="${field.key}" title="선택 텍스트 볼드">B</button>
         </div>
-        <textarea class="field-textarea" data-key="${field.key}"
+        <textarea class="field-textarea${field.key === 'body' ? ' field-textarea--body' : ''}" data-key="${field.key}"
                   placeholder="${field.placeholder || ''}">${escHtml(String(value ?? ''))}</textarea>
       </div>`;
-    case 'image':
+    case 'image': {
+      const px = slideState?.bgPosX ?? 50, py = slideState?.bgPosY ?? 50;
+      const picker = value ? `<div class="pos-picker"><div class="pos-handle" style="left:${px}%;top:${py}%"></div></div>` : '';
       return `<div class="field-group">
         <label class="field-label">${field.label}</label>
         <button class="field-image-btn ${value ? 'has-image' : ''}" data-key="${field.key}">
           ${value ? '✓ 이미지 선택됨' : '+ 이미지 업로드'}
         </button>
+        ${picker}
       </div>`;
+    }
     case 'toggle':
       return `<div class="field-group">
         <div class="toggle-row">
@@ -309,10 +588,410 @@ function escHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ── History (Undo / Redo) ─────────────────────────────────────────────────
+const history = { stack: [], index: -1 };
+let historyTimer = null;
+
+function snapshotState() {
+  return {
+    slides: JSON.parse(JSON.stringify(state.slides)),
+    slideIndex: state.slideIndex,
+    outroImage: state.outroImage,
+    outroPosX: state.outroPosX,
+    outroPosY: state.outroPosY,
+  };
+}
+
+function pushHistory() {
+  clearTimeout(historyTimer);
+  history.stack = history.stack.slice(0, history.index + 1);
+  history.stack.push(snapshotState());
+  if (history.stack.length > 60) history.stack.shift();
+  else history.index++;
+  updateHistoryBtns();
+}
+
+function pushHistoryDebounced() {
+  clearTimeout(historyTimer);
+  historyTimer = setTimeout(pushHistory, 400);
+}
+
+function restoreSnapshot(snap) {
+  state.slides = JSON.parse(JSON.stringify(snap.slides));
+  state.slideIndex = snap.slideIndex;
+  state.outroImage = snap.outroImage;
+  state.outroPosX = snap.outroPosX;
+  state.outroPosY = snap.outroPosY;
+  renderFilmstrip();
+  renderEditor();
+  renderCanvas();
+  updateHistoryBtns();
+}
+
+function undo() {
+  if (history.index <= 0) return;
+  history.index--;
+  restoreSnapshot(history.stack[history.index]);
+}
+
+function redo() {
+  if (history.index >= history.stack.length - 1) return;
+  history.index++;
+  restoreSnapshot(history.stack[history.index]);
+}
+
+function updateHistoryBtns() {
+  const u = document.getElementById('undoBtn');
+  const r = document.getElementById('redoBtn');
+  if (u) u.disabled = history.index <= 0;
+  if (r) r.disabled = history.index >= history.stack.length - 1;
+}
+
 function updateField(key, value) {
   state.slides[state.slideIndex][key] = value;
   renderCanvas();
   renderFilmstrip();
+  pushHistoryDebounced();
+}
+
+// ── AI Generation ────────────────────────────────────────────────────────────
+
+const AI_TONE_GUIDES = {
+  casual: `
+### 캐주얼 톤 작성 원칙
+- 독자가 "나도 저래" 하고 공감하는 짐라이프 순간을 포착
+- 친구한테 보내는 카톡 느낌이지만, 내용은 알차야 함
+- 자조적 유머·솔직한 고백 허용 ("솔직히 오늘 가기 싫었다")
+- 단어 나열식 나쁨 → 감정 흐름이 있는 문장 좋음`,
+  hype: `
+### 자극(HYPE) 톤 작성 원칙
+- 독자의 내면의 나약함을 직접 건드리는 어조
+- 도입부: 불편한 질문 or 현실 직격 ("지금 뭐 하고 있어?")
+- 숫자로 강도 표현: 5AM / 4세트 / 마지막 1개 / 6개월
+- 감정 정점 → 행동 촉구로 마무리. 선택이 아닌 의무처럼
+- 짧고 강한 문장. 긴 설명 금지`,
+  info: `
+### 정보성 톤 작성 원칙
+- 독자가 "저장해야겠다"고 느끼는 밀도. 교과서가 아닌 인사이트
+- 수치·이름·날짜·기록 등 팩트 필수. 애매한 수식어 대신 구체적 사실
+- 슬라이드 하나 = 독립된 개념 단위 (핵심 사실 → 배경/맥락 → 시사점)
+- 알고 있는 정보 최대한 꺼내라. "~로 알려져 있다" 같은 우회 표현 금지
+- body는 슬라이드당 반드시 3-5문장. 수치 최소 1개 이상 포함
+- 예시 수준: "**14세** 때 **45kg**, 척추측만증. **3년** 후 완전히 다른 몸이 됐다."`,
+  promo: `
+### 프로모션 톤 작성 원칙
+- 헤드라인이 60% 이상의 임팩트를 담아야 함
+- 지금 사지 않으면 손해인 이유를 논리적으로 제시
+- 가격·기간·조건 구체적으로: ₩89,000 / 05.15-05.20 / 당일출고
+- CTA는 직접적 "구매하세요" 대신 "지금 확인 →" / "링크 클릭" 선호
+- 희소성·긴박감 자연스럽게 (강요 아닌 팩트 기반)`,
+};
+
+let aiPendingSlides = null;
+
+function getAiKey() { return localStorage.getItem('gymspire_ai_key') || ''; }
+
+function openAiModal() {
+  const modal = document.getElementById('aiModal');
+  modal.style.display = 'flex';
+  document.getElementById('aiResultWrap').style.display = 'none';
+  document.getElementById('aiApplyBtn').style.display = 'none';
+  document.getElementById('aiGenerate').style.display = '';
+  document.getElementById('aiGenerate').textContent = '생성하기';
+  document.getElementById('aiGenerate').disabled = false;
+  aiPendingSlides = null;
+  if (getAiKey()) {
+    document.getElementById('aiKeyScreen').style.display = 'none';
+    document.getElementById('aiGenScreen').style.display = '';
+    setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
+  } else {
+    document.getElementById('aiKeyScreen').style.display = '';
+    document.getElementById('aiGenScreen').style.display = 'none';
+    setTimeout(() => document.getElementById('aiKeyInput').focus(), 30);
+  }
+}
+
+function buildAiPrompt(template, keyword, tone, slideCount) {
+  const slideDescs = Array.from({ length: slideCount }, (_, i) => {
+    const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
+      .filter(k => k !== 'bgImage');
+    const fieldList = keys.map(k => {
+      const def = template.fields.find(f => f.key === k);
+      return `"${k}" (${def?.label || k})`;
+    }).join(', ');
+    const label = i === 0 ? '표지' : `본문 ${i}`;
+    return `슬라이드 ${i + 1} [${label}] → 필수 필드: ${fieldList}`;
+  }).join('\n');
+
+  const systemMsg = `당신은 한국 Gymshark 공식 리셀러 @gymspire.kr의 수석 카피라이터입니다.
+팔로워 1만 명 이상의 프리미엄 피트니스 라이프스타일 계정으로, 실제 마케팅 현장에 즉시 사용 가능한 수준의 콘텐츠를 생산합니다.
+
+## 브랜드 DNA
+- 포지셔닝: 국내 유일 Gymshark 전문 리셀러 — 제품·피트니스 문화·라이프스타일을 아우름
+- 타겟: 운동을 진지하게 즐기는 20-30대 한국 MZ세대. 정보에 민감하고 품질에 까다로움
+- 참고 보이스: 29CM·에이지오브투모로우·아크테릭스코리아 수준의 밀도와 세련됨
+- 절대 금지: 번역체 / "최고의·놀라운·혁신적인·대단한·뛰어난" / 과도한 감탄사 / 빈 수식어
+
+## 카피라이팅 원칙
+
+### title (표지 및 본문 헤드라인)
+- 스크롤을 물리적으로 멈추게 만들어야 함. 10-20자.
+- 숫자·불완전 문장·의문문·반전 모두 허용
+- 좋음: "14세, 45kg. 그가 달라진 이유" / "5AM. 아무도 없는 그 시간"
+- 나쁨: "Gymshark 신제품 소개" / "운동의 중요성에 대하여"
+
+### body (본문)
+- 핵심 메시지 → 배경/근거 → 독자 적용 순서로 흐름
+- **볼드**는 핵심 수치·이름·키워드만. 슬라이드당 최대 3개
+- 짧은 문장 + 긴 문장을 섞어 리듬 생성. 줄바꿈으로 호흡 조절
+- 각 슬라이드는 독립적으로 읽혀도 가치 있어야 함
+
+### subtitle / cta
+- subtitle: title을 보완하는 맥락 추가 1줄
+- cta: "지금 확인 →" / "국내배송 가능 · 링크 클릭" 형식. 직접적 "구매" 표현 자제
+
+### 서사 구조 (필수)
+- 슬라이드 1 (표지): 강한 후킹. 다음 슬라이드가 궁금하게 만듦
+- 슬라이드 2~N-1: 각각 독립된 가치 단위. 앞에서 던진 궁금증 해소 + 새 궁금증 생성
+- 마지막 슬라이드: 실천/행동으로 자연스럽게 연결. 단정하게 마무리
+${AI_TONE_GUIDES[tone]}`;
+
+  const userMsg = `요청 내용: ${keyword}
+템플릿 유형: ${template.name}
+생성할 슬라이드 수: 정확히 ${slideCount}개
+
+## 슬라이드별 필수 필드 (모든 필드를 빠짐없이 채울 것)
+${slideDescs}
+
+## 품질 기준
+- 생성 즉시 실제 계정에 올릴 수 있는 수준으로 작성할 것
+- 각 슬라이드 body는 내용이 충분히 채워진 완성된 문장으로 작성
+- 두루뭉술하거나 뻔한 표현은 삭제하고 구체적 사실·감정·행동으로 대체
+
+## 응답 형식
+JSON만 응답. 다른 텍스트 일절 없음.
+반드시 ${slideCount}개의 슬라이드를 생성. 각 슬라이드 객체에 위 필드 키를 전부 포함. 생략·축소 불가.
+{ "slides": [ { "필드키": "값", ... }, ... ] }`;
+
+  return { systemMsg, userMsg };
+}
+
+async function runAiGenerate() {
+  const keyword = document.getElementById('aiKeyword').value.trim();
+  if (!keyword) { document.getElementById('aiKeyword').focus(); return; }
+
+  const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
+  const template = getTemplate(state.templateId);
+  const selectedCount = parseInt(document.querySelector('.ai-count-btn.active')?.dataset.count || '4');
+  const slideCount = Math.min(selectedCount, template.maxSlides || 8);
+  const key = getAiKey();
+  const btn = document.getElementById('aiGenerate');
+
+  btn.disabled = true;
+  btn.textContent = '생성 중...';
+  document.getElementById('aiResultWrap').style.display = 'none';
+  document.getElementById('aiApplyBtn').style.display = 'none';
+  aiPendingSlides = null;
+
+  try {
+    const { systemMsg, userMsg } = buildAiPrompt(template, keyword, tone, slideCount);
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemMsg },
+          { role: 'user',   content: userMsg },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: tone === 'info' ? 0.65 : 0.80,
+        max_tokens: 4000,
+      }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    aiPendingSlides = parsed.slides;
+    renderAiPreview(aiPendingSlides, template);
+    document.getElementById('aiResultWrap').style.display = '';
+    document.getElementById('aiApplyBtn').style.display = '';
+    btn.textContent = '다시 생성';
+  } catch (err) {
+    alert(`생성 실패: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    if (!aiPendingSlides) btn.textContent = '생성하기';
+  }
+}
+
+function renderAiPreview(slides, template) {
+  const el = document.getElementById('aiResultContent');
+  el.innerHTML = slides.map((slide, i) => {
+    const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
+      .filter(k => k !== 'bgImage');
+    const rows = keys.map(k => {
+      const def = template.fields.find(f => f.key === k);
+      const val = escHtml(String(slide[k] || ''));
+      return `<div class="ai-slide-field"><strong>${def?.label || k}:</strong> ${val}</div>`;
+    }).join('');
+    return `<div class="ai-slide-preview"><div class="ai-slide-num">SLIDE ${i + 1}</div>${rows}</div>`;
+  }).join('');
+}
+
+function applyAiSlides() {
+  if (!aiPendingSlides) return;
+  const template = getTemplate(state.templateId);
+  const maxSlides = template.maxSlides || template.slides || 10;
+
+  // 생성된 슬라이드 수에 맞게 배열 확장
+  while (state.slides.length < Math.min(aiPendingSlides.length, maxSlides)) {
+    const defaults = {};
+    template.fields.forEach(f => { defaults[f.key] = f.default ?? ''; });
+    state.slides.push(defaults);
+  }
+
+  aiPendingSlides.forEach((slideData, i) => {
+    if (i >= state.slides.length) return;
+    const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
+      .filter(k => k !== 'bgImage');
+    keys.forEach(k => { if (slideData[k] !== undefined) state.slides[i][k] = slideData[k]; });
+  });
+
+  state.slideIndex = 0;
+  document.getElementById('aiModal').style.display = 'none';
+  renderFilmstrip();
+  renderEditor();
+  renderCanvas();
+  pushHistory();
+}
+
+function initAiModal() {
+  document.getElementById('aiGenBtn').addEventListener('click', openAiModal);
+  document.getElementById('aiClose').addEventListener('click', () => {
+    document.getElementById('aiModal').style.display = 'none';
+  });
+  document.getElementById('aiModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) document.getElementById('aiModal').style.display = 'none';
+  });
+  document.getElementById('aiKeySave').addEventListener('click', () => {
+    const val = document.getElementById('aiKeyInput').value.trim();
+    if (!val) return;
+    localStorage.setItem('gymspire_ai_key', val);
+    document.getElementById('aiKeyScreen').style.display = 'none';
+    document.getElementById('aiGenScreen').style.display = '';
+    setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
+  });
+  document.getElementById('aiKeyCancel').addEventListener('click', () => {
+    document.getElementById('aiModal').style.display = 'none';
+  });
+  document.getElementById('aiKeyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('aiKeySave').click();
+  });
+  document.getElementById('aiKeyChange').addEventListener('click', () => {
+    document.getElementById('aiGenScreen').style.display = 'none';
+    document.getElementById('aiKeyScreen').style.display = '';
+    document.getElementById('aiKeyInput').value = '';
+    setTimeout(() => document.getElementById('aiKeyInput').focus(), 30);
+  });
+  document.getElementById('aiGenerate').addEventListener('click', runAiGenerate);
+  document.getElementById('aiApplyBtn').addEventListener('click', applyAiSlides);
+  document.getElementById('aiKeyword').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAiGenerate();
+  });
+  document.querySelectorAll('.ai-tone-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ai-tone-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.ai-count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.getElementById('aiGenerate').classList.add('ai-btn', 'ai-btn-primary');
+  document.getElementById('aiApplyBtn').classList.add('ai-btn', 'ai-btn-ghost');
+  document.getElementById('aiClose').classList.add('ai-btn', 'ai-btn-ghost');
+}
+
+// ── Presets ──────────────────────────────────────────────────────────────────
+
+function getPresets() {
+  try { return JSON.parse(localStorage.getItem('gymspire_presets') || '[]'); } catch { return []; }
+}
+
+function savePreset() {
+  const template = getTemplate(state.templateId);
+  const now = new Date();
+  const hhmm = now.toTimeString().slice(0, 5);
+  const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+  const name = `${template.name} ${mmdd} ${hhmm}`;
+  const presets = getPresets();
+  presets.unshift({
+    id: Date.now(),
+    name,
+    templateId: state.templateId,
+    slides: JSON.parse(JSON.stringify(state.slides)),
+    outroImage: state.outroImage,
+    outroPosX: state.outroPosX,
+    outroPosY: state.outroPosY,
+  });
+  try {
+    localStorage.setItem('gymspire_presets', JSON.stringify(presets));
+  } catch {
+    alert('저장 공간 부족. 이미지를 줄이거나 오래된 프리셋을 삭제하세요.');
+    return;
+  }
+  renderPresets();
+}
+
+function loadPreset(id) {
+  const preset = getPresets().find(p => p.id === id);
+  if (!preset) return;
+  state.templateId = preset.templateId;
+  state.slideIndex = 0;
+  state.slides = preset.slides;
+  state.outroImage = preset.outroImage || '';
+  state.outroPosX = preset.outroPosX ?? 50;
+  state.outroPosY = preset.outroPosY ?? 50;
+  renderGallery();
+  renderFilmstrip();
+  renderEditor();
+  renderCanvas();
+  renderPresets();
+}
+
+function deletePreset(id) {
+  if (!confirm('삭제할까요?')) return;
+  const presets = getPresets().filter(p => p.id !== id);
+  localStorage.setItem('gymspire_presets', JSON.stringify(presets));
+  renderPresets();
+}
+
+function renderPresets() {
+  const list = document.getElementById('presetList');
+  const presets = getPresets();
+  if (!presets.length) {
+    list.innerHTML = `<div style="padding:8px 20px 12px;font-size:11px;color:#2a2a2a;">저장된 항목 없음</div>`;
+    return;
+  }
+  list.innerHTML = presets.map(p => `
+    <div class="preset-item" data-id="${p.id}">
+      <span class="preset-name">${escHtml(p.name)}</span>
+      <button class="preset-delete" data-id="${p.id}">×</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('.preset-item').forEach(item => {
+    item.addEventListener('click', e => {
+      if (e.target.classList.contains('preset-delete')) return;
+      loadPreset(parseInt(item.dataset.id));
+    });
+  });
+  list.querySelectorAll('.preset-delete').forEach(btn => {
+    btn.addEventListener('click', () => deletePreset(parseInt(btn.dataset.id)));
+  });
 }
 
 // ── Task 10: Pinterest Quick Links ──────────────────────────────────────────
@@ -326,6 +1005,50 @@ function renderPinterest() {
 }
 
 // ── Task 11: PNG Export ──────────────────────────────────────────────────────
+
+async function exportAllPng() {
+  const template = getTemplate(state.templateId);
+  const btn = document.getElementById('exportAllBtn');
+  const canvas = document.getElementById('canvas');
+  const totalSlides = state.slides.length + 1;
+
+  btn.disabled = true;
+  const prevTransform = canvas.style.transform;
+  canvas.style.position = 'fixed';
+  canvas.style.left = '-9999px';
+  canvas.style.top = '0';
+  canvas.style.transform = 'none';
+
+  const ts = new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '').replace(/-/g, '');
+
+  try {
+    for (let i = 0; i < totalSlides; i++) {
+      btn.textContent = `내보내는 중 ${i + 1}/${totalSlides}`;
+      if (i === state.slides.length) {
+        canvas.style.backgroundImage = 'none';
+        canvas.innerHTML = buildBgHtml({ bgImage: state.outroImage, bgPosX: state.outroPosX, bgPosY: state.outroPosY }) + window.outroSlide();
+      } else {
+        const s = state.slides[i] || {};
+        canvas.style.backgroundImage = 'none';
+        canvas.innerHTML = buildBgHtml(s) + template.render(s, i, state.slides.length);
+      }
+      const rendered = await html2canvas(canvas, { scale: 1, width: 1080, height: 1350, useCORS: true, allowTaint: true, backgroundColor: '#000000' });
+      const link = document.createElement('a');
+      link.download = `gymspire-${state.templateId}-${ts}-${String(i + 1).padStart(2, '0')}.png`;
+      link.href = rendered.toDataURL('image/png');
+      link.click();
+      await new Promise(r => setTimeout(r, 300));
+    }
+  } finally {
+    canvas.style.position = '';
+    canvas.style.left = '';
+    canvas.style.top = '';
+    canvas.style.transform = prevTransform;
+    renderCanvas();
+    btn.disabled = false;
+    btn.textContent = '↓ 전체 내보내기';
+  }
+}
 
 function exportPng() {
   const canvas = document.getElementById('canvas');

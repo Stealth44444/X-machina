@@ -17,6 +17,10 @@
         <p class="section-label">TEMPLATE</p>
         <div id="templateList"></div>
       </div>
+      <div class="sidebar-section">
+        <p class="section-label">SAVED</p>
+        <div id="presetList"></div>
+      </div>
       <div class="sidebar-section pinterest-section">
         <div class="section-header">
           <p class="section-label">PINTEREST</p>
@@ -35,16 +39,94 @@
 
     <aside class="editor-panel">
       <p class="section-label">EDIT</p>
+      <div id="textStylePanel" style="display:none"></div>
       <div id="fields"></div>
-      <button class="export-btn" id="exportBtn">↓  PNG 내보내기</button>
+      <div class="history-row">
+        <button class="history-btn" id="undoBtn" disabled>↩ 이전</button>
+        <button class="history-btn" id="redoBtn" disabled>↪ 이후</button>
+      </div>
+      <button class="export-btn ai-gen-btn" id="aiGenBtn">✦ AI 포스트 생성</button>
+      <button class="export-btn" id="savePresetBtn">진행상황 저장</button>
+      <button class="export-btn" id="exportAllBtn">↓ 전체 내보내기</button>
+      <button class="export-btn" id="exportBtn" style="margin-top:0;">↓  PNG 내보내기</button>
     </aside>
+  </div>
+
+  <div id="aiModal" class="ai-overlay" style="display:none">
+    <div class="ai-panel">
+
+      <div id="aiKeyScreen" style="display:none">
+        <div class="ai-panel-header">
+          <span class="ai-panel-eyebrow">SETUP</span>
+          <h2 class="ai-panel-title">OpenAI API Key</h2>
+          <p class="ai-panel-desc">발급한 키는 브라우저 로컬에만 저장됩니다.</p>
+        </div>
+        <input class="ai-input" id="aiKeyInput" type="password" placeholder="sk-proj-...">
+        <div class="ai-actions">
+          <button class="ai-btn ai-btn-ghost" id="aiKeyCancel">취소</button>
+          <button class="ai-btn ai-btn-primary" id="aiKeySave">저장하기</button>
+        </div>
+      </div>
+
+      <div id="aiGenScreen" style="display:none">
+        <div class="ai-panel-header">
+          <div class="ai-panel-header-row">
+            <span class="ai-panel-eyebrow">✦ AI GENERATE</span>
+            <button class="ai-subtle-btn" id="aiKeyChange">API 키 변경</button>
+          </div>
+          <h2 class="ai-panel-title">포스트 생성</h2>
+        </div>
+
+        <div class="ai-field">
+          <label class="ai-label">어떤 포스트를 만들까요?</label>
+          <textarea class="ai-input ai-textarea" id="aiKeyword" placeholder="짐샤크 Vital Seamless 레깅스 신상 입고. 핑크/베이지 컬러. 20대 여성 타겟. 운동 후 데일리룩으로도 활용 가능한 점 강조. 국내배송 CTA 포함."></textarea>
+        </div>
+
+        <div class="ai-field">
+          <label class="ai-label">톤</label>
+          <div class="ai-tone-row">
+            <button class="ai-tone-btn active" data-tone="casual">캐주얼</button>
+            <button class="ai-tone-btn" data-tone="hype">자극</button>
+            <button class="ai-tone-btn" data-tone="info">정보성</button>
+            <button class="ai-tone-btn" data-tone="promo">프로모션</button>
+          </div>
+        </div>
+
+        <div class="ai-field">
+          <label class="ai-label">슬라이드 수</label>
+          <div class="ai-tone-row">
+            <button class="ai-count-btn" data-count="3">3장</button>
+            <button class="ai-count-btn active" data-count="4">4장</button>
+            <button class="ai-count-btn" data-count="5">5장</button>
+            <button class="ai-count-btn" data-count="6">6장</button>
+            <button class="ai-count-btn" data-count="7">7장</button>
+            <button class="ai-count-btn" data-count="8">8장</button>
+          </div>
+        </div>
+
+        <div id="aiResultWrap" style="display:none">
+          <div class="ai-result-header">
+            <span class="ai-label">생성 결과</span>
+          </div>
+          <div id="aiResultContent" class="ai-result-list"></div>
+        </div>
+
+        <div class="ai-actions">
+          <button class="ai-btn ai-btn-ghost" id="aiClose">닫기</button>
+          <div class="ai-actions-right">
+            <button class="ai-btn ai-btn-ghost" id="aiApplyBtn" style="display:none">적용</button>
+            <button class="ai-btn ai-btn-primary" id="aiGenerate">생성하기</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="templates/motivation.js"></script>
   <script src="templates/product.js"></script>
   <script src="templates/promo.js"></script>
-  <script src="templates/tips.js"></script>
   <script src="templates/cardnews.js"></script>
   <script src="app.js"></script>
 </body>
