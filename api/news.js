@@ -25,6 +25,34 @@ async function fetchGoogleNews() {
   return items;
 }
 
+// ── Gymshark official blog (Next.js __NEXT_DATA__ parse) ─────────────────
+async function fetchBlog() {
+  const res = await fetch('https://www.gymshark.com/blogs/news', {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!m) return [];
+  const data = JSON.parse(m[1]);
+  const cut = cutoff();
+  const articles = [];
+  function walk(obj, depth) {
+    if (depth > 12 || !obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) { obj.forEach(v => walk(v, depth + 1)); return; }
+    if (obj.publishDate && obj.title && obj.slug) {
+      const ms = new Date(obj.publishDate).getTime();
+      if (!isNaN(ms) && ms >= cut) {
+        articles.push({ title: obj.title, date: msToDate(ms), source: 'blog', ms });
+      }
+      return;
+    }
+    Object.values(obj).forEach(v => walk(v, depth + 1));
+  }
+  walk(data, 0);
+  return articles.sort((a, b) => b.ms - a.ms).slice(0, 12);
+}
+
 // ── Reddit r/gymshark ────────────────────────────────────────────────────
 async function fetchReddit() {
   const res = await fetch('https://www.reddit.com/r/gymshark/new.json?limit=25&raw_json=1', {
@@ -79,16 +107,18 @@ export default async function handler(req, res) {
   try {
     const ytKey = process.env.YOUTUBE_API_KEY;
 
-    const [gnews, reddit, youtube] = await Promise.allSettled([
+    const [gnews, blog, reddit, youtube] = await Promise.allSettled([
       fetchGoogleNews(),
+      fetchBlog(),
       fetchReddit(),
       ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
     ]);
 
     const sourceResults = {
-      news:    gnews.status === 'fulfilled'   ? gnews.value    : [],
-      reddit:  reddit.status === 'fulfilled'  ? reddit.value   : [],
-      youtube: youtube.status === 'fulfilled' ? youtube.value  : [],
+      news:    gnews.status === 'fulfilled'   ? gnews.value   : [],
+      blog:    blog.status === 'fulfilled'    ? blog.value    : [],
+      reddit:  reddit.status === 'fulfilled'  ? reddit.value  : [],
+      youtube: youtube.status === 'fulfilled' ? youtube.value : [],
     };
     const sourceStatus = Object.fromEntries(
       Object.entries(sourceResults).map(([k, v]) => [k, { ok: v.length > 0, count: v.length }])

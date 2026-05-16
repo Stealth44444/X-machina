@@ -967,6 +967,25 @@ body {
 .news-card-source--reddit  { background: #1f1208; color: #d4773a; }
 .news-card-source--youtube { background: #1a0a0a; color: #e05555; }
 
+/* ── Unified active state for all panel toggle buttons ───────────────────── */
+.ai-tone-btn.active,
+.ai-count-btn.active,
+.ai-speech-btn.active,
+.ai-target-btn.active,
+.news-filter-btn.active {
+  border-color: #2B9BF4 !important;
+  color: #2B9BF4 !important;
+  background: rgba(43,155,244,0.08) !important;
+}
+
+.template-item.active,
+.slide-tab.active {
+  background: #0d1929;
+  color: #2B9BF4;
+  border-color: #2B9BF4;
+  font-weight: 600;
+}
+
 .news-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
