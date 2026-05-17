@@ -1202,18 +1202,24 @@ function loadProject(projectId) {
   state.projectId = projectId;
   try { localStorage.setItem(ACTIVE_PROJECT_KEY, projectId); } catch {}
   document.getElementById('brandName').textContent = project.name;
-  if (!loadAutoSave()) {
+  try {
+    if (!loadAutoSave()) {
+      loadTemplate('cardnews');
+    } else {
+      renderGallery();
+      renderFilmstrip();
+      renderEditor();
+      renderCanvas();
+      history.stack = [snapshotState()];
+      history.index = 0;
+      updateHistoryBtns();
+    }
+    renderPresets();
+  } catch (e) {
+    console.error('loadProject render error:', e);
     loadTemplate('cardnews');
-  } else {
-    renderGallery();
-    renderFilmstrip();
-    renderEditor();
-    renderCanvas();
-    history.stack = [snapshotState()];
-    history.index = 0;
-    updateHistoryBtns();
+    renderPresets();
   }
-  renderPresets();
   hideProjectScreen();
 }
 
