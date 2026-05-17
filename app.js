@@ -39,7 +39,8 @@ function loadAutoSave() {
     const raw = localStorage.getItem(AUTOSAVE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
-    if (data.projectId !== state.projectId) return false;
+    const dataProjectId = data.projectId || 'gymspire';
+    if (dataProjectId !== state.projectId) return false;
     if (!getTemplate(data.templateId)) return false;
     state.templateId = data.templateId;
     state.slides = data.slides;
@@ -1254,7 +1255,12 @@ function initProjectSystem() {
     localStorage.setItem(PRESET_KEY_PREFIX + 'gymspire', oldPresets);
   }
   document.getElementById('projectSwitchBtn').addEventListener('click', showProjectScreen);
-  const savedId = localStorage.getItem(ACTIVE_PROJECT_KEY);
+  let savedId = localStorage.getItem(ACTIVE_PROJECT_KEY);
+  // 기존 사용자(이전 버전 데이터 보유) → 자동으로 gymspire로 설정, 프로젝트 화면 스킵
+  if (!savedId && (oldPresets || localStorage.getItem(AUTOSAVE_KEY))) {
+    savedId = 'gymspire';
+    localStorage.setItem(ACTIVE_PROJECT_KEY, 'gymspire');
+  }
   if (savedId && getAllProjects().some(p => p.id === savedId)) {
     state.projectId = savedId;
     const project = getAllProjects().find(p => p.id === savedId);
