@@ -601,8 +601,8 @@ function renderEditor() {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = ev => {
-          state.outroImage = ev.target.result;
+        reader.onload = async ev => {
+          state.outroImage = await compressImage(ev.target.result);
           renderCanvas();
           renderFilmstrip();
           renderEditor();
@@ -723,8 +723,8 @@ function renderEditor() {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = ev => {
-          updateField(btn.dataset.key, ev.target.result);
+        reader.onload = async ev => {
+          updateField(btn.dataset.key, await compressImage(ev.target.result));
           renderEditor();
         };
         reader.readAsDataURL(file);
@@ -930,6 +930,23 @@ function renderField(field, value, slideState) {
     default:
       return '';
   }
+}
+
+function compressImage(dataUrl, maxPx = 1080, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 function escHtml(str) {
@@ -1759,11 +1776,18 @@ function savePreset(nameOverride) {
     outroPosX: state.outroPosX,
     outroPosY: state.outroPosY,
   });
-  try {
-    localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets));
-  } catch {
-    alert('저장 공간 부족. 이미지를 줄이거나 오래된 프리셋을 삭제하세요.');
-    return;
+  // 저장 실패 시 오래된 프리셋 하나씩 제거 후 재시도 (최신 1개는 무조건 유지)
+  while (presets.length > 0) {
+    try {
+      localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets));
+      break;
+    } catch {
+      if (presets.length <= 1) {
+        alert('저장 공간 부족. 배경 이미지 없이 저장하거나 브라우저 캐시를 정리하세요.');
+        return;
+      }
+      presets.pop(); // 가장 오래된 항목 제거 후 재시도
+    }
   }
   renderPresets();
 }
