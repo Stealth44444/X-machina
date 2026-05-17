@@ -1132,7 +1132,7 @@ function getCustomProjects() {
 }
 
 function saveCustomProjects(projects) {
-  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+  try { localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects)); } catch {}
 }
 
 function getAllProjects() {
@@ -1200,7 +1200,7 @@ function loadProject(projectId) {
   const project = getAllProjects().find(p => p.id === projectId);
   if (!project) return;
   state.projectId = projectId;
-  localStorage.setItem(ACTIVE_PROJECT_KEY, projectId);
+  try { localStorage.setItem(ACTIVE_PROJECT_KEY, projectId); } catch {}
   document.getElementById('brandName').textContent = project.name;
   if (!loadAutoSave()) {
     loadTemplate('cardnews');
@@ -1252,14 +1252,18 @@ function showNewProjectModal() {
 function initProjectSystem() {
   const oldPresets = localStorage.getItem('gymspire_presets');
   if (oldPresets && !localStorage.getItem(PRESET_KEY_PREFIX + 'gymspire')) {
-    localStorage.setItem(PRESET_KEY_PREFIX + 'gymspire', oldPresets);
+    try { localStorage.setItem(PRESET_KEY_PREFIX + 'gymspire', oldPresets); } catch {}
+  }
+  // 마이그레이션 완료 후 구 키 삭제 → 중복 저장 공간 해제
+  if (localStorage.getItem('gymspire_presets') && localStorage.getItem(PRESET_KEY_PREFIX + 'gymspire')) {
+    localStorage.removeItem('gymspire_presets');
   }
   document.getElementById('projectSwitchBtn').addEventListener('click', showProjectScreen);
   let savedId = localStorage.getItem(ACTIVE_PROJECT_KEY);
   // 기존 사용자(이전 버전 데이터 보유) → 자동으로 gymspire로 설정, 프로젝트 화면 스킵
   if (!savedId && (oldPresets || localStorage.getItem(AUTOSAVE_KEY))) {
     savedId = 'gymspire';
-    localStorage.setItem(ACTIVE_PROJECT_KEY, 'gymspire');
+    try { localStorage.setItem(ACTIVE_PROJECT_KEY, 'gymspire'); } catch {}
   }
   if (savedId && getAllProjects().some(p => p.id === savedId)) {
     state.projectId = savedId;
@@ -1778,7 +1782,7 @@ function loadPreset(id) {
 function deletePreset(id) {
   if (!confirm('삭제할까요?')) return;
   const presets = getPresets().filter(p => p.id !== id);
-  localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets));
+  try { localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets)); } catch {}
   renderPresets();
 }
 
