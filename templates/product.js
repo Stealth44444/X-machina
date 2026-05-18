@@ -19,7 +19,6 @@ window.GYMSPIRE_TEMPLATES.push({
     if (slideIndex > 0) return window.contentSlide(s, slideIndex, total);
     return `
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 35%,rgba(0,0,0,0.75) 60%,#000 100%);"></div>
-      <img src="./gymspire-logo.png" style="position:absolute;top:28px;left:50%;transform:translateX(-50%);height:130px;mix-blend-mode:multiply;opacity:1;pointer-events:none;">
       <div data-drag-key="title" style="position:absolute;bottom:260px;left:48px;right:48px;font-size:62px;font-weight:800;line-height:1.2;color:#fff;white-space:pre-wrap;">${s.title || ''}</div>
       <div data-drag-key="price" style="position:absolute;bottom:195px;left:48px;font-size:30px;font-weight:600;color:rgba(255,255,255,0.90);">${s.price || ''}</div>
       <div data-drag-key="cta" style="position:absolute;bottom:130px;left:48px;right:48px;font-size:24px;font-weight:400;color:rgba(255,255,255,0.68);">${s.cta || ''}</div>

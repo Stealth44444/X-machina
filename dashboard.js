@@ -92,7 +92,7 @@ function renderPostCard(post) {
     ? new Date(post.scheduled_at).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '대기 중';
   const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || './gymspire-logo.png';
+  const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"><rect width="400" height="500" fill="%23111"/><text x="50%" y="50%" fill="%23555" font-size="16" font-family="sans-serif" font-weight="bold" text-anchor="middle" dominant-baseline="middle">NO THUMBNAIL</text></svg>';
   const slideCount = post.slide_images ? post.slide_images.length : 0;
   const safeCaption = escSafe(post.caption || '');
 
