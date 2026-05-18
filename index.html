@@ -3,15 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>GYMSPIRE Template Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="authScreen" style="display:none"></div>
+  <div id="dashboardScreen" style="display:none"></div>
   <div class="app">
     <aside class="sidebar">
       <div class="sidebar-brand">
         <span class="brand-name" id="brandName">GYMSPIRE</span>
-        <button class="project-switch-btn" id="projectSwitchBtn" title="프로젝트 변경">⊞</button>
+        <button class="project-switch-btn" id="dashboardBtn" title="대시보드">⊟</button>
+        <button class="project-switch-btn" id="projectSwitchBtn" title="채널 변경">⊞</button>
+        <button class="project-switch-btn" id="logoutBtn" title="로그아웃" style="font-size:10px;opacity:0.5">↗</button>
       </div>
       <div class="sidebar-section sidebar-nav">
         <button class="sidebar-news-btn" id="newsModeBtn">
@@ -210,6 +215,12 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="templates/cardnews.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="db.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="migrate.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

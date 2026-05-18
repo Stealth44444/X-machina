@@ -1865,3 +1865,112 @@ body {
   font-weight: 700;
   margin-top: 2px;
 }
+
+/* ── Auth Screen ─────────────────────────────────────────────────────────── */
+#authScreen {
+  position: fixed; inset: 0;
+  background: #080808;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9000;
+}
+.auth-wrap { width: 100%; max-width: 360px; padding: 0 24px; }
+.auth-card { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 40px 32px; }
+.auth-logo { font-size: 18px; font-weight: 900; color: #e8e8e8; letter-spacing: 2px; margin-bottom: 6px; }
+.auth-sub { font-size: 11px; color: #444; margin: 0 0 32px; letter-spacing: 1px; }
+.auth-input {
+  display: block; width: 100%; box-sizing: border-box;
+  background: #0a0a0a; border: 1px solid #222; border-radius: 4px;
+  color: #e8e8e8; font-size: 13px; padding: 10px 12px;
+  margin-bottom: 10px; outline: none;
+}
+.auth-input:focus { border-color: #2B9BF4; }
+.auth-btn {
+  width: 100%; padding: 11px; margin-top: 8px;
+  background: #2B9BF4; color: #fff; border: none; border-radius: 4px;
+  font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+}
+.auth-btn:disabled { opacity: 0.5; cursor: default; }
+.auth-error { font-size: 11px; color: #e05; margin-top: 10px; text-align: center; min-height: 16px; }
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+#dashboardScreen {
+  position: fixed; inset: 0; background: #080808;
+  z-index: 1500; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.dash-loading { margin: auto; color: #444; font-size: 13px; }
+.dash-inner { display: flex; flex-direction: column; height: 100%; }
+.dash-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 24px; border-bottom: 1px solid #111;
+  flex-shrink: 0;
+}
+.dash-title { font-size: 13px; font-weight: 900; color: #e8e8e8; letter-spacing: 2px; margin-right: 8px; }
+.dash-channel-tabs { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.dash-ch-tab {
+  padding: 5px 12px; border-radius: 20px; border: 1px solid #222;
+  background: transparent; color: #555; font-size: 11px; font-weight: 600;
+  cursor: pointer; letter-spacing: 0.5px;
+}
+.dash-ch-tab.active { background: #1a1a1a; color: #e8e8e8; border-color: #333; }
+.dash-close-btn {
+  padding: 6px 14px; background: #111; border: 1px solid #222; border-radius: 4px;
+  color: #888; font-size: 11px; cursor: pointer; white-space: nowrap;
+}
+.dash-body { display: flex; flex: 1; overflow: hidden; }
+.dash-kanban { display: flex; gap: 12px; padding: 20px; width: 340px; flex-shrink: 0; overflow-y: auto; }
+.dash-col { display: flex; flex-direction: column; flex: 1; min-width: 100px; }
+.dash-col-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 9px; font-weight: 700; color: #444; letter-spacing: 1.5px;
+  padding: 0 4px 10px;
+}
+.dash-col-count { background: #1a1a1a; color: #666; padding: 2px 6px; border-radius: 10px; }
+.dash-cards { display: flex; flex-direction: column; gap: 8px; }
+.dash-card {
+  background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 6px;
+  overflow: hidden; cursor: pointer;
+}
+.dash-card:hover { border-color: #2a2a2a; }
+.dash-card-thumb {
+  width: 100%; aspect-ratio: 4/5; background-size: cover; background-position: center;
+  background-color: #151515;
+}
+.dash-card-thumb--empty { display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.dash-card-body { padding: 8px 10px; }
+.dash-card-ch { font-size: 9px; font-weight: 700; letter-spacing: 1px; margin-bottom: 3px; }
+.dash-card-name { font-size: 11px; color: #ccc; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-card-date { font-size: 10px; color: #444; }
+.dash-calendar-col { flex: 1; padding: 20px; overflow-y: auto; border-left: 1px solid #111; }
+.dash-cal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.dash-cal-title { font-size: 13px; font-weight: 700; color: #ccc; flex: 1; }
+.dash-nav-btn {
+  width: 28px; height: 28px; background: #111; border: 1px solid #222;
+  border-radius: 4px; color: #888; font-size: 16px; cursor: pointer;
+}
+.dash-view-toggle {
+  padding: 4px 10px; background: transparent; border: 1px solid #222;
+  border-radius: 4px; color: #666; font-size: 10px; cursor: pointer;
+}
+.dash-cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  margin-bottom: 16px;
+}
+.dash-cal-dayname { text-align: center; font-size: 9px; font-weight: 700; color: #333; padding: 4px 0; letter-spacing: 1px; }
+.dash-cal-day {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-start; padding: 4px; background: #0a0a0a;
+  border: 1px solid transparent; border-radius: 4px; cursor: pointer;
+}
+.dash-cal-day:hover { border-color: #222; }
+.dash-cal-day.today .dash-cal-daynum { color: #2B9BF4; font-weight: 700; }
+.dash-cal-day.selected { background: #111; border-color: #2B9BF4; }
+.dash-cal-daynum { font-size: 12px; color: #666; }
+.dash-cal-dots { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; margin-top: 2px; }
+.dash-cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+.dash-date-label { font-size: 11px; font-weight: 700; color: #888; margin-bottom: 10px; letter-spacing: 1px; }
+.dash-new-post-btn {
+  width: 100%; padding: 10px; background: #111; border: 1px dashed #222;
+  border-radius: 4px; color: #555; font-size: 12px; cursor: pointer; margin-top: 12px;
+}
+.dash-new-post-btn:hover { border-color: #2B9BF4; color: #2B9BF4; }
