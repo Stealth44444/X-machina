@@ -482,7 +482,7 @@ body {
 
 /* ── MOODBOARD channel groups ───────────────────────────────────────────────── */
 .moodboard-group {
-  border-bottom: 1px solid #111;
+  border-bottom: 1px solid #1a1a1a;
 }
 
 .moodboard-group--active > .moodboard-group-header {
@@ -504,9 +504,9 @@ body {
 }
 
 .moodboard-group-name {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
@@ -524,8 +524,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 6px 20px 8px;
-  border-bottom: 1px solid #111;
+  padding: 8px 20px;
+  border-bottom: 1px solid #1a1a1a;
 }
 
 .moodboard-source-btn {
@@ -536,8 +536,9 @@ body {
   color: #444;
   font-family: inherit;
   font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
   cursor: pointer;
-  letter-spacing: 0.03em;
   transition: border-color 0.1s, color 0.1s;
 }
 
@@ -561,16 +562,15 @@ body {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 9px 20px;
+  padding: 8px 20px;
   background: none;
   border: none;
   border-bottom: 1px solid #1a1a1a;
   border-radius: 0;
   color: #555;
-  font-size: 12px;
+  font-size: 11px;
   text-align: left;
   white-space: nowrap;
-  gap: 8px;
 }
 
 .keyword-btn:hover {
@@ -1444,10 +1444,14 @@ body {
 }
 
 .preset-item--new {
-  color: #333;
-  border-bottom: 1px solid #111;
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  color: #555;
+  border-bottom: 1px solid #1a1a1a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  justify-content: flex-start;
 }
 
 .preset-item--new:hover {
