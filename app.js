@@ -192,22 +192,83 @@ function attachDragHandlers(canvas) {
   });
 }
 
-const PINTEREST_KEYWORDS = [
-  'Gymshark aesthetic',
-  'Gymshark men',
-  'Gymshark women',
-  'Gymshark outfit',
-  'David Laid',
-  'Chris Bumstead',
-  'Zac Perna',
-  'Ryan Terry',
-  'Nikki Blackketter',
-  'gym aesthetic',
-  'physique aesthetic',
-  "men's physique",
-  'fitness photography',
-  'bodybuilding aesthetic',
-];
+const SOURCE_URLS = {
+  Pinterest: kw => `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(kw)}`,
+  Dezeen:    kw => `https://www.dezeen.com/search/?q=${encodeURIComponent(kw)}`,
+  ArchDaily: kw => `https://www.archdaily.com/search/projects?q=${encodeURIComponent(kw)}`,
+  Behance:   kw => `https://www.behance.net/search/projects?q=${encodeURIComponent(kw)}`,
+  Bloomberg: kw => `https://www.bloomberg.com/search?query=${encodeURIComponent(kw)}`,
+  Google:    kw => `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(kw)}`,
+};
+
+const MOODBOARD = {
+  spacelog: {
+    sources: ['Pinterest', 'Dezeen', 'ArchDaily', 'Behance'],
+    keywords: [
+      'brutalist architecture',
+      'urban regeneration',
+      'adaptive reuse',
+      'commercial real estate aesthetic',
+      'mixed-use development',
+      'gentrify neighborhood',
+    ],
+  },
+  CAPITALFLOW: {
+    sources: ['Pinterest', 'Bloomberg', 'Google'],
+    keywords: [
+      'data visualization finance',
+      'economic infographic',
+      'financial chart aesthetic',
+      'capital flow',
+      'interest rates',
+      'currency exchange',
+      'asset management',
+      'inflation visual',
+      'GDP chart',
+      'global capital flow map',
+      'market crash visual',
+    ],
+  },
+  'obscurelife.kr': {
+    sources: ['Pinterest', 'Behance', 'Dezeen'],
+    keywords: [
+      'single malt whisky',
+      'rare bourbon',
+      'private members club',
+      'luxury bar aesthetic',
+      'high-end lifestyle',
+      'luxury packaging design',
+      'premium brand identity',
+      'luxury interior',
+      'private club design',
+      'high-end hospitality',
+    ],
+  },
+  'Nightcall.audio': {
+    sources: ['Pinterest', 'Google'],
+    keywords: [
+      'hip hop album artwork',
+      'rap aesthetic',
+      'underground hiphop visual',
+      'street culture photography',
+      'hip hop music video aesthetic',
+      'rap album cover design',
+      'label visual identity',
+    ],
+  },
+  mma_seoul: {
+    sources: ['Pinterest', 'Google'],
+    keywords: [
+      'UFC fighter portrait',
+      'MMA poster design',
+      'combat sports photography',
+      'boxing editorial',
+      'UFC octagon visual',
+      'MMA fighter aesthetic',
+      'combat sports graphic',
+    ],
+  },
+};
 
 function openScheduleModal() {
   document.getElementById('scheduleCaption').value = state.slides[0]?.title || '';
@@ -316,7 +377,7 @@ async function initApp() {
   scaleCanvas();
   window.addEventListener('resize', scaleCanvas);
   renderGallery();
-  renderPinterest();
+  renderMoodboard();
   document.getElementById('exportBtn').addEventListener('click', exportPng);
   document.getElementById('exportAllBtn').addEventListener('click', exportAllPng);
   document.getElementById('savePresetBtn').addEventListener('click', () => savePreset());
@@ -332,11 +393,11 @@ async function initApp() {
   document.getElementById('newsModeBtn').addEventListener('click', () => {
     setMode(state.appMode === 'news' ? 'edit' : 'news');
   });
-  document.getElementById('pinterestToggle').addEventListener('click', () => {
-    const grid = document.getElementById('keywordGrid');
-    const btn = document.getElementById('pinterestToggle');
-    const hidden = grid.style.display === 'none';
-    grid.style.display = hidden ? '' : 'none';
+  document.getElementById('moodboardToggle').addEventListener('click', () => {
+    const panel = document.getElementById('moodboardPanel');
+    const btn = document.getElementById('moodboardToggle');
+    const hidden = panel.style.display === 'none';
+    panel.style.display = hidden ? '' : 'none';
     btn.textContent = hidden ? '접기' : '펼치기';
   });
   initRatioBtns();
@@ -1349,6 +1410,10 @@ async function loadChannel(channelId) {
   const channel = (state.channels || []).find(c => c.id === channelId);
   if (!channel) return;
   state.projectId = channelId;
+  const switchedName = channel.name;
+  Object.keys(moodboardState).forEach(k => { moodboardState[k] = false; });
+  moodboardState[switchedName] = true;
+  renderMoodboard();
   newsCache.items = []; newsCache.fetchedAt = 0; // bust cache on channel switch
   try { localStorage.setItem(ACTIVE_CHANNEL_KEY, channelId); } catch {}
   document.getElementById('brandName').textContent = channel.name;
@@ -2112,14 +2177,68 @@ function renderAiNewsPreview() {
   }
 }
 
-// ── Task 10: Pinterest Quick Links ──────────────────────────────────────────
+// ── MOODBOARD ────────────────────────────────────────────────────────────────
 
-function renderPinterest() {
-  const grid = document.getElementById('keywordGrid');
-  grid.innerHTML = PINTEREST_KEYWORDS.map(kw => {
-    const url = `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(kw)}`;
-    return `<a class="keyword-btn" href="${url}" target="_blank" rel="noopener">${kw}</a>`;
+const moodboardState = {};
+const moodboardSourceState = {};
+
+function getActiveMoodboardName() {
+  if (!state.channels) return null;
+  const ch = state.channels.find(c => c.id === state.projectId);
+  return ch ? ch.name : null;
+}
+
+function renderMoodboard() {
+  const panel = document.getElementById('moodboardPanel');
+  if (!panel) return;
+  const activeName = getActiveMoodboardName();
+
+  panel.innerHTML = Object.entries(MOODBOARD).map(([name, data]) => {
+    if (moodboardState[name] === undefined) moodboardState[name] = (name === activeName);
+    if (!moodboardSourceState[name]) moodboardSourceState[name] = data.sources[0];
+
+    const isOpen = moodboardState[name];
+    const selectedSource = moodboardSourceState[name];
+    const isActive = name === activeName;
+
+    const sourceBtns = data.sources.map(src =>
+      `<button class="moodboard-source-btn${src === selectedSource ? ' moodboard-source-btn--active' : ''}" data-channel="${name}" data-source="${src}">${src}</button>`
+    ).join('');
+
+    const keywords = data.keywords.map(kw => {
+      const urlFn = SOURCE_URLS[selectedSource];
+      const url = urlFn ? urlFn(kw) : '#';
+      return `<a class="keyword-btn" href="${url}" target="_blank" rel="noopener">${kw}</a>`;
+    }).join('');
+
+    return `
+      <div class="moodboard-group${isActive ? ' moodboard-group--active' : ''}">
+        <div class="moodboard-group-header" data-channel="${name}">
+          <span class="moodboard-group-name">${name}</span>
+          <button class="moodboard-group-toggle" data-channel="${name}">${isOpen ? '▾' : '▸'}</button>
+        </div>
+        <div class="moodboard-group-body" style="display:${isOpen ? '' : 'none'}">
+          <div class="moodboard-sources">${sourceBtns}</div>
+          <div class="moodboard-keywords">${keywords}</div>
+        </div>
+      </div>`;
   }).join('');
+
+  panel.querySelectorAll('.moodboard-group-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const ch = header.dataset.channel;
+      moodboardState[ch] = !moodboardState[ch];
+      renderMoodboard();
+    });
+  });
+
+  panel.querySelectorAll('.moodboard-source-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      moodboardSourceState[btn.dataset.channel] = btn.dataset.source;
+      renderMoodboard();
+    });
+  });
 }
 
 // ── Task 11: PNG Export ──────────────────────────────────────────────────────

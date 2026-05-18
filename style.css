@@ -471,7 +471,7 @@ body {
   color: #ffffff;
 }
 
-.pinterest-section {
+.moodboard-section {
   flex: 1;
   border-bottom: none;
   overflow-y: auto;
@@ -480,7 +480,78 @@ body {
   scrollbar-color: #2a2a2a transparent;
 }
 
-/* ── Pinterest override: vertical list ─────────────────────────────────────── */
+/* ── MOODBOARD channel groups ───────────────────────────────────────────────── */
+.moodboard-group {
+  border-bottom: 1px solid #111;
+}
+
+.moodboard-group--active > .moodboard-group-header {
+  color: #e8e8e8;
+}
+
+.moodboard-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  cursor: pointer;
+  color: #444;
+  user-select: none;
+}
+
+.moodboard-group-header:hover {
+  color: #888;
+}
+
+.moodboard-group-name {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.moodboard-group-toggle {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.moodboard-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 20px 8px;
+  border-bottom: 1px solid #111;
+}
+
+.moodboard-source-btn {
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid #222;
+  border-radius: 3px;
+  color: #444;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: border-color 0.1s, color 0.1s;
+}
+
+.moodboard-source-btn:hover {
+  border-color: #333;
+  color: #888;
+}
+
+.moodboard-source-btn--active {
+  border-color: #555;
+  color: #e8e8e8;
+}
+
+/* ── MOODBOARD keyword list ────────────────────────────────────────────────── */
 .keyword-grid {
   display: block;
   padding: 0;
