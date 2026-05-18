@@ -209,6 +209,53 @@ const PINTEREST_KEYWORDS = [
   'bodybuilding aesthetic',
 ];
 
+function openScheduleModal() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + 60);
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  document.getElementById('scheduleDateTime').value = local;
+  document.getElementById('scheduleCaption').value = state.slides[0]?.title || '';
+  document.getElementById('scheduleModal').style.display = 'flex';
+}
+
+async function confirmSchedule() {
+  const dt = document.getElementById('scheduleDateTime').value;
+  const caption = document.getElementById('scheduleCaption').value;
+  if (!dt) { alert('날짜를 선택해주세요.'); return; }
+
+  const btn = document.getElementById('scheduleConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = '등록 중...';
+
+  try {
+    let presetId = state.activePresetId;
+    if (!presetId) {
+      const saved = await dbUpsertPreset({
+        channel_id: state.projectId,
+        name: state.slides[0]?.title || '예약 포스트',
+        slides_json: JSON.parse(JSON.stringify(state.slides)),
+      });
+      presetId = saved.id;
+      state.activePresetId = presetId;
+    }
+    await dbUpsertPost({
+      channel_id: state.projectId,
+      preset_id: presetId,
+      status: 'scheduled',
+      scheduled_at: new Date(dt).toISOString(),
+      caption,
+      thumbnail_url: state.slides.find(s => s.bgImage)?.bgImage || null,
+    });
+    document.getElementById('scheduleModal').style.display = 'none';
+    alert('예약 완료! 대시보드에서 확인하세요.');
+  } catch (e) {
+    alert('예약 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '예약 등록';
+  }
+}
+
 async function init() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
@@ -263,6 +310,11 @@ async function initApp() {
     renderTextStylePanel();
     applyTextStyles(document.getElementById('canvas'), slideState, true);
   });
+  document.getElementById('scheduleBtn').addEventListener('click', openScheduleModal);
+  document.getElementById('scheduleModalClose').addEventListener('click', () => {
+    document.getElementById('scheduleModal').style.display = 'none';
+  });
+  document.getElementById('scheduleConfirmBtn').addEventListener('click', confirmSchedule);
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     await supabaseClient.auth.signOut();
     location.reload();
