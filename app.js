@@ -1891,7 +1891,7 @@ async function renderPresets() {
   const newCanvasItem = `<div class="preset-item preset-item--new" id="newCanvasBtn"><span class="preset-item-icon">+</span> 새 캔버스</div>`;
 
   if (!presets.length) {
-    list.innerHTML = newCanvasItem + `<div style="padding:8px 20px 12px;font-size:11px;color:#2a2a2a;">저장된 항목 없음</div>`;
+    list.innerHTML = newCanvasItem + `<div style="padding:20px;font-size:11px;color:#2a2a2a;text-align:center;">저장된 항목 없음</div>`;
   } else {
     list.innerHTML = newCanvasItem + presets.map(p => `
       <div class="preset-item ${p.id === state.activePresetId ? 'active' : ''}" data-id="${p.id}">
