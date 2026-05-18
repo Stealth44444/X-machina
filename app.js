@@ -379,6 +379,9 @@ async function initApp() {
   });
   initAiModal();
   fetchGymsharkNews();
+  document.getElementById('brandName').addEventListener('click', () => {
+    if (state.appMode !== 'edit') setMode('edit');
+  });
   document.getElementById('newsModeBtn').addEventListener('click', () => {
     setMode(state.appMode === 'settings' ? 'edit' : 'settings');
   });
@@ -1957,7 +1960,25 @@ function setMode(mode) {
     if (mode === 'settings') {
       renderProjectSettings();
     } else {
-      newsView.innerHTML = '<div id="projNewsPane"><div class="news-view-empty">불러오는 중...</div></div>';
+      const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
+      newsView.innerHTML = `
+        <div class="news-feed-view">
+          <div class="news-feed-header">
+            <div class="news-feed-header-left">
+              <span class="proj-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
+              <h2 class="news-feed-title">뉴스 피드</h2>
+            </div>
+            <div class="news-feed-header-right">
+              <button class="news-refresh-btn" id="newsRefreshBtn">새로고침</button>
+              <button class="news-refresh-btn" id="newsFeedCloseBtn">나가기</button>
+            </div>
+          </div>
+          <div id="projNewsPane"></div>
+        </div>`;
+      document.getElementById('newsRefreshBtn').addEventListener('click', () => {
+        newsPage = 0; newsFilter = 'all'; fetchGymsharkNews(true);
+      });
+      document.getElementById('newsFeedCloseBtn').addEventListener('click', () => setMode('edit'));
       renderFullNewsPanel(newsCache.items.length ? undefined : 'loading');
       if (!newsCache.items.length || Date.now() - newsCache.fetchedAt > NEWS_CACHE_TTL) {
         fetchGymsharkNews();
@@ -2005,8 +2026,13 @@ function renderProjectSettings() {
     <div class="proj-settings-view">
       <div class="proj-settings-inner">
         <div class="proj-settings-header">
-          <span class="proj-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
-          <h2 class="proj-settings-title">프로젝트 설정</h2>
+          <div class="proj-settings-header-row">
+            <div>
+              <span class="proj-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
+              <h2 class="proj-settings-title">프로젝트 설정</h2>
+            </div>
+            <button class="news-refresh-btn" id="projSettingsCloseBtn">나가기</button>
+          </div>
         </div>
         <div class="proj-settings-body">
           <div class="ch-field">
@@ -2053,6 +2079,7 @@ function renderProjectSettings() {
     if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
   });
   document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
+  document.getElementById('projSettingsCloseBtn').addEventListener('click', () => setMode('edit'));
 }
 
 async function saveProjectSettings() {
@@ -2093,12 +2120,10 @@ function renderFullNewsPanel(status) {
   const pane = document.getElementById('projNewsPane');
   if (!pane) return;
 
-  const actions = `<div class="proj-news-actions"><button class="news-refresh-btn" id="newsRefreshBtn">새로고침</button></div>`;
-
   if (status === 'loading') {
-    pane.innerHTML = actions + `<div class="news-view-empty">불러오는 중...</div>`;
+    pane.innerHTML = `<div class="news-view-empty">불러오는 중...</div>`;
   } else if (status === 'error' || !newsCache.items.length) {
-    pane.innerHTML = actions + `<div class="news-view-empty">소스를 불러올 수 없습니다</div>`;
+    pane.innerHTML = `<div class="news-view-empty">소스를 불러올 수 없습니다</div>`;
   } else {
     const ALL_SOURCES = ['news', 'newsapi', 'blog', 'youtube'];
     const counts = Object.fromEntries(
@@ -2128,17 +2153,21 @@ function renderFullNewsPanel(status) {
         ? `<div class="news-source-desc">${escHtml(NEWS_SOURCE_LABELS[newsFilter].desc)}</div>`
         : ''}`;
 
-    pane.innerHTML = actions + filterTabs + `
+    pane.innerHTML = filterTabs + `
       <div class="news-cards-grid">
         ${pageItems.length ? pageItems.map(item => {
           const domain = item.url ? (() => { try { return new URL(item.url).hostname.replace(/^www\./, ''); } catch { return ''; } })() : '';
           return `
           <div class="news-card" data-title="${escHtml(item.title)}">
-            <span class="news-card-source news-card-source--${item.source}">${NEWS_SOURCE_LABELS[item.source]?.label || item.source}</span>
+            <div class="news-card-meta">
+              <span class="news-card-source news-card-source--${item.source}">${NEWS_SOURCE_LABELS[item.source]?.label || item.source}</span>
+              <span class="news-card-date">${escHtml(item.date)}</span>
+            </div>
             <div class="news-card-title">${escHtml(item.title)}</div>
-            ${item.url ? `<a class="news-card-url" href="${escHtml(item.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escHtml(domain)}</a>` : ''}
-            <div class="news-card-date">${escHtml(item.date)}</div>
-            <button class="news-card-btn">이 소재로 포스트 생성 →</button>
+            <div class="news-card-footer">
+              ${item.url ? `<a class="news-card-url" href="${escHtml(item.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escHtml(domain)}</a>` : '<span></span>'}
+              <button class="news-card-btn">이 소재로 포스트 생성</button>
+            </div>
           </div>`;
         }).join('') : `<div style="grid-column:1/-1;padding:40px 0;font-size:13px;color:#333;text-align:center;">No recent articles for this filter</div>`}
       </div>
@@ -2167,8 +2196,7 @@ function renderFullNewsPanel(status) {
       return;
     }
     const id = e.target.closest('[id]')?.id;
-    if (id === 'newsRefreshBtn') { newsPage = 0; newsFilter = 'all'; fetchGymsharkNews(true); }
-    else if (id === 'newsPrevBtn') { newsPage--; renderFullNewsPanel(); }
+    if (id === 'newsPrevBtn') { newsPage--; renderFullNewsPanel(); }
     else if (id === 'newsNextBtn') { newsPage++; renderFullNewsPanel(); }
   };
 }
