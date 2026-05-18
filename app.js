@@ -1,7 +1,6 @@
-const AUTOSAVE_KEY = 'brand_tool_autosave';
-const PROJECT_STORAGE_KEY = 'brand_tool_projects';
-const ACTIVE_PROJECT_KEY = 'brand_tool_active_project';
-const PRESET_KEY_PREFIX = 'brand_tool_presets_';
+const AUTOSAVE_KEY = 'brand_tool_autosave';       // kept — localStorage for crash recovery
+const ACTIVE_CHANNEL_KEY = 'brand_tool_active_channel';
+const PROJECT_STORAGE_KEY = 'brand_tool_projects'; // legacy — used only by AI context helpers
 
 const state = {
   templateId: 'cardnews',
@@ -210,14 +209,31 @@ const PINTEREST_KEYWORDS = [
   'bodybuilding aesthetic',
 ];
 
-function init() {
+async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    renderAuthScreen();
+    showAuthScreen();
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        hideAuthScreen();
+        await initApp();
+      }
+    });
+    return;
+  }
+  await initApp();
+}
+
+async function initApp() {
+  if (typeof runMigrationIfNeeded === 'function') await runMigrationIfNeeded();
   scaleCanvas();
   window.addEventListener('resize', scaleCanvas);
   renderGallery();
   renderPinterest();
   document.getElementById('exportBtn').addEventListener('click', exportPng);
   document.getElementById('exportAllBtn').addEventListener('click', exportAllPng);
-  document.getElementById('savePresetBtn').addEventListener('click', savePreset);
+  document.getElementById('savePresetBtn').addEventListener('click', () => savePreset());
   document.getElementById('undoBtn').addEventListener('click', undo);
   document.getElementById('redoBtn').addEventListener('click', redo);
   document.addEventListener('keydown', e => {
@@ -247,9 +263,37 @@ function init() {
     renderTextStylePanel();
     applyTextStyles(document.getElementById('canvas'), slideState, true);
   });
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    location.reload();
+  });
+  if (typeof showDashboard === 'function') {
+    document.getElementById('dashboardBtn')?.addEventListener('click', showDashboard);
+  }
+  const canvas = document.getElementById('canvas');
+  canvas.addEventListener('click', e => {
+    const key = e.target.closest('[data-drag-key]')?.dataset.dragKey;
+    if (key) {
+      state.selectedDragKey = key;
+      renderTextStylePanel();
+    }
+  });
+  canvas.addEventListener('input', e => {
+    if (!e.target.dataset.dragKey) return;
+    const key = e.target.dataset.dragKey;
+    updateField(key, e.target.innerText);
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(saveAutoSave, 800);
+  });
+  canvas.addEventListener('blur', e => {
+    if (!e.target.dataset.dragKey) return;
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(saveAutoSave, 800);
+    applyTextStyles(document.getElementById('canvas'), state.slides[state.slideIndex] || {}, true);
+  }, true);
 
-  const hasProject = initProjectSystem();
-  if (hasProject) {
+  const hasChannel = await initChannelSystem();
+  if (hasChannel) {
     if (!loadAutoSave()) {
       loadTemplate('cardnews');
     } else {
@@ -261,7 +305,7 @@ function init() {
       history.index = 0;
       updateHistoryBtns();
     }
-    renderPresets();
+    await renderPresets();
   } else {
     loadTemplate('cardnews');
     showProjectScreen();
@@ -602,7 +646,11 @@ function renderEditor() {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async ev => {
-          state.outroImage = await compressImage(ev.target.result);
+          try {
+            state.outroImage = await uploadBgImage(ev.target.result, state.projectId);
+          } catch {
+            state.outroImage = await compressImage(ev.target.result);
+          }
           renderCanvas();
           renderFilmstrip();
           renderEditor();
@@ -724,7 +772,11 @@ function renderEditor() {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async ev => {
-          updateField(btn.dataset.key, await compressImage(ev.target.result));
+          try {
+            updateField(btn.dataset.key, await uploadBgImage(ev.target.result, state.projectId));
+          } catch {
+            updateField(btn.dataset.key, await compressImage(ev.target.result));
+          }
           renderEditor();
         };
         reader.readAsDataURL(file);
@@ -1184,7 +1236,7 @@ function hideProjectScreen() {
 }
 
 function renderProjectScreen() {
-  const projects = getAllProjects();
+  const projects = state.channels || [];
   const screen = document.getElementById('projectScreen');
   screen.innerHTML = `
     <div class="project-screen-inner">
@@ -1208,17 +1260,17 @@ function renderProjectScreen() {
     </div>
   `;
   screen.querySelectorAll('.project-card[data-id]').forEach(card => {
-    card.addEventListener('click', () => loadProject(card.dataset.id));
+    card.addEventListener('click', () => loadChannel(card.dataset.id));
   });
   document.getElementById('newProjectCardBtn').addEventListener('click', showNewProjectModal);
 }
 
-function loadProject(projectId) {
-  const project = getAllProjects().find(p => p.id === projectId);
-  if (!project) return;
-  state.projectId = projectId;
-  try { localStorage.setItem(ACTIVE_PROJECT_KEY, projectId); } catch {}
-  document.getElementById('brandName').textContent = project.name;
+async function loadChannel(channelId) {
+  const channel = (state.channels || []).find(c => c.id === channelId);
+  if (!channel) return;
+  state.projectId = channelId;
+  try { localStorage.setItem(ACTIVE_CHANNEL_KEY, channelId); } catch {}
+  document.getElementById('brandName').textContent = channel.name;
   try {
     if (!loadAutoSave()) {
       loadTemplate('cardnews');
@@ -1231,11 +1283,11 @@ function loadProject(projectId) {
       history.index = 0;
       updateHistoryBtns();
     }
-    renderPresets();
+    await renderPresets();
   } catch (e) {
-    console.error('loadProject render error:', e);
+    console.error('loadChannel render error:', e);
     loadTemplate('cardnews');
-    renderPresets();
+    await renderPresets();
   }
   hideProjectScreen();
 }
@@ -1259,42 +1311,35 @@ function showNewProjectModal() {
   overlay.querySelector('#newProjectName').focus();
   overlay.querySelector('#newProjectCancel').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  overlay.querySelector('#newProjectConfirm').addEventListener('click', () => {
+  overlay.querySelector('#newProjectConfirm').addEventListener('click', async () => {
     const name = overlay.querySelector('#newProjectName').value.trim();
     const desc = overlay.querySelector('#newProjectDesc').value.trim();
     if (!name) { overlay.querySelector('#newProjectName').focus(); return; }
-    const custom = getCustomProjects();
-    const id = 'custom_' + Date.now();
-    custom.push({ id, name: name.toUpperCase(), description: desc || '커스텀 프로젝트', builtIn: false });
-    saveCustomProjects(custom);
-    overlay.remove();
-    renderProjectScreen();
+    try {
+      await dbUpsertChannel({
+        name: name.toUpperCase(),
+        description: desc || '커스텀 채널',
+        color: '#2B9BF4',
+        emoji: '📷',
+      });
+      state.channels = await dbGetChannels();
+      overlay.remove();
+      renderProjectScreen();
+    } catch (e) { alert('생성 실패: ' + e.message); }
   });
 }
 
-function initProjectSystem() {
-  const oldPresets = localStorage.getItem('gymspire_presets');
-  if (oldPresets && !localStorage.getItem(PRESET_KEY_PREFIX + 'gymspire')) {
-    try { localStorage.setItem(PRESET_KEY_PREFIX + 'gymspire', oldPresets); } catch {}
-  }
-  // 마이그레이션 완료 후 구 키 삭제 → 중복 저장 공간 해제
-  if (localStorage.getItem('gymspire_presets') && localStorage.getItem(PRESET_KEY_PREFIX + 'gymspire')) {
-    localStorage.removeItem('gymspire_presets');
-  }
+async function initChannelSystem() {
   document.getElementById('projectSwitchBtn').addEventListener('click', showProjectScreen);
-  let savedId = localStorage.getItem(ACTIVE_PROJECT_KEY);
-  // 기존 사용자(이전 버전 데이터 보유) → 자동으로 gymspire로 설정, 프로젝트 화면 스킵
-  if (!savedId && (oldPresets || localStorage.getItem(AUTOSAVE_KEY))) {
-    savedId = 'gymspire';
-    try { localStorage.setItem(ACTIVE_PROJECT_KEY, 'gymspire'); } catch {}
-  }
-  if (savedId && getAllProjects().some(p => p.id === savedId)) {
-    state.projectId = savedId;
-    const project = getAllProjects().find(p => p.id === savedId);
-    document.getElementById('brandName').textContent = project.name;
-    return true;
-  }
-  return false;
+  let channels;
+  try { channels = await dbGetChannels(); } catch { channels = []; }
+  if (!channels.length) return false;
+  state.channels = channels;
+  const savedId = localStorage.getItem(ACTIVE_CHANNEL_KEY);
+  const target = channels.find(c => c.id === savedId) || channels[0];
+  state.projectId = target.id;
+  document.getElementById('brandName').textContent = target.name;
+  return true;
 }
 
 let aiPendingSlides = null;
@@ -1673,7 +1718,7 @@ function smartKoreanBreaks(text) {
     .trim();
 }
 
-function applyAiSlides() {
+async function applyAiSlides() {
   if (!aiPendingSlides) return;
   const template = getTemplate(state.templateId);
   const maxSlides = template.maxSlides || template.slides || 10;
@@ -1697,7 +1742,7 @@ function applyAiSlides() {
   renderCanvas();
   pushHistory();
   const titleName = aiPendingSlides[0]?.title;
-  savePreset(titleName || undefined);
+  await savePreset(titleName || undefined);
 }
 
 function initAiModal() {
@@ -1756,44 +1801,33 @@ function initAiModal() {
 
 // ── Presets ──────────────────────────────────────────────────────────────────
 
-function getPresets() {
-  try { return JSON.parse(localStorage.getItem(PRESET_KEY_PREFIX + state.projectId) || '[]'); } catch { return []; }
+async function getPresets() {
+  try { return await dbGetPresets(state.projectId); } catch { return []; }
 }
 
-function savePreset(nameOverride) {
+async function savePreset(nameOverride) {
   const template = getTemplate(state.templateId);
   const now = new Date();
   const hhmm = now.toTimeString().slice(0, 5);
   const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
   const name = nameOverride || `${template.name} ${mmdd} ${hhmm}`;
-  const presets = getPresets();
-  presets.unshift({
-    id: Date.now(),
-    name,
-    templateId: state.templateId,
-    slides: JSON.parse(JSON.stringify(state.slides)),
-    outroImage: state.outroImage,
-    outroPosX: state.outroPosX,
-    outroPosY: state.outroPosY,
-  });
-  // 저장 실패 시 오래된 프리셋 하나씩 제거 후 재시도 (최신 1개는 무조건 유지)
-  while (presets.length > 0) {
-    try {
-      localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets));
-      break;
-    } catch {
-      if (presets.length <= 1) {
-        alert('저장 공간 부족. 배경 이미지 없이 저장하거나 브라우저 캐시를 정리하세요.');
-        return;
-      }
-      presets.pop(); // 가장 오래된 항목 제거 후 재시도
-    }
+  try {
+    const saved = await dbUpsertPreset({
+      channel_id: state.projectId,
+      name,
+      slides_json: JSON.parse(JSON.stringify(state.slides)),
+    });
+    state.activePresetId = saved.id;
+  } catch (e) {
+    alert('저장 실패: ' + e.message);
+    return;
   }
   renderPresets();
 }
 
-function loadPreset(id) {
-  const preset = getPresets().find(p => p.id === id);
+async function loadPreset(id) {
+  const presets = await getPresets();
+  const preset = presets.find(p => p.id === id);
   if (!preset) return;
   state.templateId = preset.templateId;
   state.slideIndex = 0;
@@ -1809,16 +1843,15 @@ function loadPreset(id) {
   renderPresets();
 }
 
-function deletePreset(id) {
+async function deletePreset(id) {
   if (!confirm('삭제할까요?')) return;
-  const presets = getPresets().filter(p => p.id !== id);
-  try { localStorage.setItem(PRESET_KEY_PREFIX + state.projectId, JSON.stringify(presets)); } catch {}
+  try { await dbDeletePreset(id); } catch (e) { alert('삭제 실패: ' + e.message); return; }
   renderPresets();
 }
 
-function renderPresets() {
+async function renderPresets() {
   const list = document.getElementById('presetList');
-  const presets = getPresets();
+  const presets = await getPresets();
   if (!presets.length) {
     list.innerHTML = `<div style="padding:8px 20px 12px;font-size:11px;color:#2a2a2a;">저장된 항목 없음</div>`;
     return;
