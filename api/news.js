@@ -7,7 +7,7 @@ function msToDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
 // ── Google News RSS ──────────────────────────────────────────────────────
 async function fetchGoogleNews(query) {
   const q = encodeURIComponent(query);
-  const url = `https://news.google.com/rss/search?q=${q}&hl=ko&gl=KR&ceid=KR:ko`;
+  const url = `https://news.google.com/rss/search?q=${q}&hl=en&gl=US&ceid=US:en`;
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } });
   if (!res.ok) return [];
   const xml = await res.text();
@@ -225,15 +225,26 @@ export default async function handler(req, res) {
     );
 
     const seen = new Set();
-    const items = Object.values(sourceResults).flat()
+    const deduped = Object.values(sourceResults).flat()
       .sort((a, b) => b.ms - a.ms)
       .filter(item => {
         const key = item.title.toLowerCase().slice(0, 40);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
-      })
-      .map(({ ms, ...rest }) => rest);
+      });
+
+    // Relevance scoring: count keyword appearances in title
+    const kwLower = rawKeywords.map(k => k.toLowerCase());
+    const scored = deduped.map(item => {
+      const t = item.title.toLowerCase();
+      const score = kwLower.reduce((acc, kw) => acc + (t.includes(kw) ? 1 : 0), 0);
+      return { ...item, _score: score };
+    }).sort((a, b) => b._score !== a._score ? b._score - a._score : b.ms - a.ms);
+
+    // Keep only relevant items if enough exist; otherwise return all
+    const relevant = scored.filter(i => i._score > 0);
+    const items = (relevant.length >= 5 ? relevant : scored).map(({ ms, _score, ...rest }) => rest);
 
     res.status(200).json({ items, sources: sourceStatus });
   } catch (err) {

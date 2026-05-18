@@ -136,8 +136,8 @@ body {
   color: #444;
   font-family: inherit;
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
@@ -1079,16 +1079,112 @@ body {
   padding-left: 14px;
 }
 
-/* ── News full view (replaces canvas+editor when active) ─────────────────────── */
+/* ── Project Settings view (replaces canvas+editor when active) ──────────────── */
 #newsView {
   flex: 1;
   display: flex;
-  flex-direction: column;
   background: #080808;
+  overflow: hidden;
+}
+
+.proj-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.proj-left {
+  width: 300px;
+  min-width: 260px;
+  background: #0f0f0f;
+  border-right: 1px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.proj-left-header {
+  padding: 32px 24px 20px;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+.proj-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #ffffff;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.proj-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #e8e8e8;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.proj-left-body {
+  flex: 1;
   overflow-y: auto;
-  padding: 44px 52px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   scrollbar-width: thin;
   scrollbar-color: #2a2a2a transparent;
+}
+
+.proj-left-footer {
+  padding: 14px 24px;
+  border-top: 1px solid #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.proj-save-status {
+  font-size: 10px;
+  color: #444;
+  letter-spacing: 1px;
+}
+
+.proj-right {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px 44px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
+}
+
+.proj-news-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.proj-news-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.proj-news-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #e8e8e8;
+  letter-spacing: -0.3px;
+  margin: 0;
 }
 
 .news-view-header {
@@ -2118,7 +2214,7 @@ body {
 }
 .ch-token-toggle {
   margin-top: 4px; padding: 4px 10px; background: transparent;
-  border: 1px solid #1e1e1e; border-radius: 3px; color: #555; font-size: 10px; cursor: pointer;
+  border: 1px solid #1a1a1a; border-radius: 3px; color: #555; font-size: 10px; cursor: pointer;
 }
 .ch-token-toggle:hover { border-color: #333; color: #aaa; }
 .ch-divider {
