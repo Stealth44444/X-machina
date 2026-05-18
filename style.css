@@ -1087,18 +1087,23 @@ body {
   overflow: hidden;
 }
 
-.proj-tabs-layout {
-  display: flex;
-  flex-direction: column;
+.proj-settings-view {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 52px 44px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
 }
 
-.proj-tabs-header {
-  padding: 28px 44px 0;
-  background: #0a0a0a;
-  border-bottom: 1px solid #1a1a1a;
-  flex-shrink: 0;
+.proj-settings-inner {
+  width: 100%;
+  max-width: 560px;
+}
+
+.proj-settings-header {
+  margin-bottom: 36px;
 }
 
 .proj-eyebrow {
@@ -1107,60 +1112,29 @@ body {
   font-weight: 700;
   letter-spacing: 3px;
   color: #444;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   text-transform: uppercase;
 }
 
-.proj-tab-btns {
-  display: flex;
-}
-
-.proj-tab-btn {
-  padding: 10px 0;
-  margin-right: 28px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: #444;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.proj-tab-btn:hover { color: #888; }
-
-.proj-tab-btn.active {
+.proj-settings-title {
+  font-size: 22px;
+  font-weight: 800;
   color: #e8e8e8;
-  border-bottom-color: #ffffff;
-}
-
-.proj-tab-content {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  scrollbar-width: thin;
-  scrollbar-color: #2a2a2a transparent;
+  letter-spacing: -0.3px;
+  margin: 0;
 }
 
 .proj-settings-body {
-  padding: 32px 44px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 580px;
-  width: 100%;
 }
 
 .proj-settings-footer {
-  padding: 0 44px 32px;
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 580px;
+  margin-top: 28px;
 }
 
 .proj-save-status {

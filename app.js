@@ -380,6 +380,10 @@ async function initApp() {
   initAiModal();
   fetchGymsharkNews();
   document.getElementById('newsModeBtn').addEventListener('click', () => {
+    setMode(state.appMode === 'settings' ? 'edit' : 'settings');
+  });
+  const newsFeedBtnEl = document.getElementById('newsFeedBtn');
+  if (newsFeedBtnEl) newsFeedBtnEl.addEventListener('click', () => {
     setMode(state.appMode === 'news' ? 'edit' : 'news');
   });
   initRatioBtns();
@@ -1941,19 +1945,30 @@ function setMode(mode) {
   const canvasArea = document.querySelector('.canvas-area');
   const editorPanel = document.querySelector('.editor-panel');
   const newsView = document.getElementById('newsView');
-  const btn = document.getElementById('newsModeBtn');
+  const settingsBtn = document.getElementById('newsModeBtn');
+  const feedBtn = document.getElementById('newsFeedBtn');
 
-  if (mode === 'news') {
+  if (mode === 'settings' || mode === 'news') {
     canvasArea.style.display = 'none';
     editorPanel.style.display = 'none';
     newsView.style.display = '';
-    btn.classList.add('active');
-    renderProjectSettings();
+    settingsBtn.classList.toggle('active', mode === 'settings');
+    if (feedBtn) feedBtn.classList.toggle('active', mode === 'news');
+    if (mode === 'settings') {
+      renderProjectSettings();
+    } else {
+      newsView.innerHTML = '<div id="projNewsPane"><div class="news-view-empty">불러오는 중...</div></div>';
+      renderFullNewsPanel(newsCache.items.length ? undefined : 'loading');
+      if (!newsCache.items.length || Date.now() - newsCache.fetchedAt > NEWS_CACHE_TTL) {
+        fetchGymsharkNews();
+      }
+    }
   } else {
     canvasArea.style.display = '';
     editorPanel.style.display = '';
     newsView.style.display = 'none';
-    btn.classList.remove('active');
+    settingsBtn.classList.remove('active');
+    if (feedBtn) feedBtn.classList.remove('active');
   }
 }
 
@@ -1986,80 +2001,58 @@ function renderProjectSettings() {
   if (!view) return;
   const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
 
-  const settingsHTML = `
-    <div class="proj-settings-body">
-      <div class="ch-field">
-        <label class="ch-label">채널 이름</label>
-        <input class="ch-input" id="projName" type="text" value="${escHtml(ch.name || '')}">
-      </div>
-      <div class="ch-field">
-        <label class="ch-label">브랜드 컨텍스트</label>
-        <p class="ch-hint">AI 포스트 생성 시 계정 특성을 반영합니다</p>
-        <textarea class="ch-input ch-textarea" id="projDesc" rows="4">${escHtml(ch.description || '')}</textarea>
-      </div>
-      <div class="ch-field">
-        <label class="ch-label">뉴스 키워드 <span class="ch-optional">영문 권장</span></label>
-        <p class="ch-hint">쉼표로 구분. 뉴스 피드 및 AI 컨텍스트에 사용됩니다.</p>
-        <input class="ch-input" id="projKeywords" type="text" value="${escHtml((ch.news_keywords || []).join(', '))}">
-      </div>
-      <div class="ch-field">
-        <label class="ch-label">AI 시스템 프롬프트 <span class="ch-optional">선택</span></label>
-        <p class="ch-hint">비워두면 기본 프롬프트 사용. 입력 시 완전 대체.</p>
-        <textarea class="ch-input ch-textarea" id="projSystemPrompt" rows="5">${escHtml(ch.ai_system_prompt || '')}</textarea>
-      </div>
-      <div class="ch-field ch-field--row">
-        <div class="ch-field-inner">
-          <label class="ch-label">색상</label>
-          <input class="ch-input ch-input--color" id="projColor" type="color" value="${escHtml(ch.color || '#ffffff')}">
-        </div>
-        <div class="ch-field-inner" style="flex:3">
-          <label class="ch-label">HEX</label>
-          <input class="ch-input" id="projColorHex" type="text" value="${escHtml(ch.color || '#ffffff')}">
-        </div>
-      </div>
-    </div>
-    <div class="proj-settings-footer">
-      <span class="proj-save-status" id="projSaveStatus"></span>
-      <button class="ch-btn ch-btn--primary" id="projSaveBtn">저장</button>
-    </div>`;
-
-  const newsHTML = `<div id="projNewsPane"><div class="news-view-empty">불러오는 중...</div></div>`;
-
   view.innerHTML = `
-    <div class="proj-tabs-layout">
-      <div class="proj-tabs-header">
-        <span class="proj-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
-        <div class="proj-tab-btns">
-          <button class="proj-tab-btn ${projTab === 'settings' ? 'active' : ''}" data-tab="settings">설정</button>
-          <button class="proj-tab-btn ${projTab === 'news' ? 'active' : ''}" data-tab="news">뉴스 피드</button>
+    <div class="proj-settings-view">
+      <div class="proj-settings-inner">
+        <div class="proj-settings-header">
+          <span class="proj-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
+          <h2 class="proj-settings-title">프로젝트 설정</h2>
         </div>
-      </div>
-      <div class="proj-tab-content">
-        ${projTab === 'settings' ? settingsHTML : newsHTML}
+        <div class="proj-settings-body">
+          <div class="ch-field">
+            <label class="ch-label">채널 이름</label>
+            <input class="ch-input" id="projName" type="text" value="${escHtml(ch.name || '')}">
+          </div>
+          <div class="ch-field">
+            <label class="ch-label">브랜드 컨텍스트</label>
+            <p class="ch-hint">AI 포스트 생성 시 계정 특성을 반영합니다</p>
+            <textarea class="ch-input ch-textarea" id="projDesc" rows="4">${escHtml(ch.description || '')}</textarea>
+          </div>
+          <div class="ch-field">
+            <label class="ch-label">뉴스 키워드 <span class="ch-optional">영문 권장</span></label>
+            <p class="ch-hint">쉼표로 구분. 뉴스 피드 및 AI 컨텍스트에 사용됩니다.</p>
+            <input class="ch-input" id="projKeywords" type="text" value="${escHtml((ch.news_keywords || []).join(', '))}">
+          </div>
+          <div class="ch-field">
+            <label class="ch-label">AI 시스템 프롬프트 <span class="ch-optional">선택</span></label>
+            <p class="ch-hint">비워두면 기본 프롬프트 사용. 입력 시 완전 대체.</p>
+            <textarea class="ch-input ch-textarea" id="projSystemPrompt" rows="5">${escHtml(ch.ai_system_prompt || '')}</textarea>
+          </div>
+          <div class="ch-field ch-field--row">
+            <div class="ch-field-inner">
+              <label class="ch-label">색상</label>
+              <input class="ch-input ch-input--color" id="projColor" type="color" value="${escHtml(ch.color || '#ffffff')}">
+            </div>
+            <div class="ch-field-inner" style="flex:3">
+              <label class="ch-label">HEX</label>
+              <input class="ch-input" id="projColorHex" type="text" value="${escHtml(ch.color || '#ffffff')}">
+            </div>
+          </div>
+        </div>
+        <div class="proj-settings-footer">
+          <span class="proj-save-status" id="projSaveStatus"></span>
+          <button class="ch-btn ch-btn--primary" id="projSaveBtn">저장</button>
+        </div>
       </div>
     </div>`;
 
-  view.querySelectorAll('.proj-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      projTab = btn.dataset.tab;
-      renderProjectSettings();
-    });
+  const colorInput = document.getElementById('projColor');
+  const colorHex = document.getElementById('projColorHex');
+  colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
+  colorHex.addEventListener('input', () => {
+    if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
   });
-
-  if (projTab === 'settings') {
-    const colorInput = document.getElementById('projColor');
-    const colorHex = document.getElementById('projColorHex');
-    colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
-    colorHex.addEventListener('input', () => {
-      if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
-    });
-    document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
-  } else {
-    renderFullNewsPanel(newsCache.items.length ? undefined : 'loading');
-    if (!newsCache.items.length || Date.now() - newsCache.fetchedAt > NEWS_CACHE_TTL) {
-      fetchGymsharkNews();
-    }
-  }
+  document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
 }
 
 async function saveProjectSettings() {
