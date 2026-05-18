@@ -1,4 +1,7 @@
 KakaoTalk_*.png
 짐스파이어 로고.png
 docs/
-.vercel/
+.vercel
+.env
+.env.local
+.env*.local

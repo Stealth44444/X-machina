@@ -210,26 +210,59 @@ const PINTEREST_KEYWORDS = [
 ];
 
 function openScheduleModal() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() + 60);
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  document.getElementById('scheduleDateTime').value = local;
   document.getElementById('scheduleCaption').value = state.slides[0]?.title || '';
   document.getElementById('scheduleModal').style.display = 'flex';
 }
 
+async function renderSlidesToUrls() {
+  const template = getTemplate(state.templateId);
+  const canvas = document.getElementById('canvas');
+  const urls = [];
+
+  const prevPos = canvas.style.position;
+  const prevLeft = canvas.style.left;
+  const prevTop = canvas.style.top;
+  const prevTransform = canvas.style.transform;
+  canvas.style.position = 'fixed';
+  canvas.style.left = '-9999px';
+  canvas.style.top = '0';
+  canvas.style.transform = 'none';
+
+  try {
+    for (let i = 0; i < state.slides.length; i++) {
+      const s = state.slides[i] || {};
+      canvas.style.backgroundImage = 'none';
+      canvas.innerHTML = buildBgHtml(s) + template.render(s, i, state.slides.length);
+      const rendered = await html2canvas(canvas, {
+        scale: 1, width: 1080, height: state.canvasH || 1350,
+        useCORS: true, allowTaint: true, backgroundColor: '#000000',
+      });
+      const dataUrl = rendered.toDataURL('image/jpeg', 0.92);
+      const url = await uploadBgImage(dataUrl, state.projectId);
+      urls.push(url);
+      await new Promise(r => setTimeout(r, 200));
+    }
+  } finally {
+    canvas.style.position = prevPos;
+    canvas.style.left = prevLeft;
+    canvas.style.top = prevTop;
+    canvas.style.transform = prevTransform;
+    renderCanvas();
+  }
+
+  return urls;
+}
+
 async function confirmSchedule() {
-  const dt = document.getElementById('scheduleDateTime').value;
   const caption = document.getElementById('scheduleCaption').value;
-  if (!dt) { alert('날짜를 선택해주세요.'); return; }
 
   const btn = document.getElementById('scheduleConfirmBtn');
   btn.disabled = true;
-  btn.textContent = '등록 중...';
 
   try {
     let presetId = state.activePresetId;
     if (!presetId) {
+      btn.textContent = '저장 중...';
       const saved = await dbUpsertPreset({
         channel_id: state.projectId,
         name: state.slides[0]?.title || '예약 포스트',
@@ -238,21 +271,27 @@ async function confirmSchedule() {
       presetId = saved.id;
       state.activePresetId = presetId;
     }
+
+    btn.textContent = '렌더링 중...';
+    const slideImages = await renderSlidesToUrls();
+
+    btn.textContent = '등록 중...';
     await dbUpsertPost({
       channel_id: state.projectId,
       preset_id: presetId,
       status: 'scheduled',
-      scheduled_at: new Date(dt).toISOString(),
+      scheduled_at: new Date().toISOString(),
       caption,
-      thumbnail_url: state.slides.find(s => s.bgImage)?.bgImage || null,
+      slide_images: slideImages,
+      thumbnail_url: slideImages[0] || state.slides.find(s => s.bgImage)?.bgImage || null,
     });
     document.getElementById('scheduleModal').style.display = 'none';
-    alert('예약 완료! 대시보드에서 확인하세요.');
+    alert('검수 큐에 등록되었습니다! 대시보드에서 확인하세요.');
   } catch (e) {
-    alert('예약 실패: ' + e.message);
+    alert('등록 실패: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = '예약 등록';
+    btn.textContent = '검수 큐에 올리기';
   }
 }
 
@@ -1321,6 +1360,7 @@ async function loadChannel(channelId) {
   const channel = (state.channels || []).find(c => c.id === channelId);
   if (!channel) return;
   state.projectId = channelId;
+  newsCache.items = []; newsCache.fetchedAt = 0; // bust cache on channel switch
   try { localStorage.setItem(ACTIVE_CHANNEL_KEY, channelId); } catch {}
   document.getElementById('brandName').textContent = channel.name;
   try {
@@ -1481,73 +1521,49 @@ function buildAiPrompt(template, keyword, tone, slideCount, speech, target, news
     return `슬라이드 ${i + 1} [${label}] → 필수 필드: ${fieldList}`;
   }).join('\n');
 
-  const systemMsg = `당신은 한국 Gymshark 공식 리셀러 @gymspire.kr의 수석 카피라이터입니다.
-팔로워 1만 명 이상의 프리미엄 피트니스 라이프스타일 계정으로, 실제 마케팅 현장에 즉시 사용 가능한 수준의 콘텐츠를 생산합니다.
-${getProjectContext()}
+  const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
+  const channelName = ch.name || '이 계정';
 
-## 계정 DNA
-- 포지셔닝: 국내 유일 Gymshark 전문 리셀러 — 제품·피트니스 문화·라이프스타일을 아우름
-- 타겟: 운동을 진지하게 즐기는 20-30대 한국 MZ세대. 정보에 민감하고 품질에 까다로움
-- 참고 보이스: 29CM·에이지오브투모로우·아크테릭스코리아 수준의 밀도와 세련됨
-- 절대 금지: 번역체 / "최고의·놀라운·혁신적인·대단한·뛰어난" / 과도한 감탄사 / 빈 수식어
+  const channelBase = ch.ai_system_prompt
+    ? ch.ai_system_prompt
+    : `당신은 ${channelName} 인스타그램 계정의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.${ch.description ? '\n\n브랜드 컨텍스트:\n' + ch.description : ''}`;
+
+  const systemMsg = `${channelBase}
 
 ## 카피라이팅 원칙
 
 ### title (표지 및 본문 헤드라인)
 - 스크롤을 물리적으로 멈추게 만들어야 함. 10-20자.
 - 숫자·불완전 문장·의문문·반전 모두 허용
-- 좋음: "14세, 45kg. 그가 달라진 이유" / "5AM. 아무도 없는 그 시간"
-- 나쁨: "Gymshark 신제품 소개" / "운동의 중요성에 대하여"
+- 절대 금지: 번역체 / "최고의·놀라운·혁신적인·대단한·뛰어난" / 과도한 감탄사 / 빈 수식어
 
 ### body (본문)
 - 핵심 메시지 → 배경/근거 → 독자 적용 순서로 흐름
 - **볼드**는 핵심 수치·이름·키워드만. 슬라이드당 최대 3개
 - 짧은 문장 + 긴 문장을 섞어 리듬 생성
-- **줄바꿈 필수**: 문장이 끝날 때마다 반드시 \n 삽입. "습니다.", "어요.", "세요.", "다.", "요." 등 문장 종결 후 반드시 다음 문장은 새 줄에서 시작
+- **줄바꿈 필수**: 문장 종결 후 반드시 다음 문장은 새 줄에서 시작
 - 2-3문장마다 빈 줄(\n\n)로 단락 구분해 시각적 호흡 제공
 - 각 슬라이드는 독립적으로 읽혀도 가치 있어야 함
-- **body 필드에 CTA 문구 절대 금지**: "국내배송", "링크 클릭", "지금 확인", "구매" 등 구매 유도 표현은 body에 넣지 말 것. CTA는 오직 "cta" 필드에만 작성.
+- **body 필드에 CTA 문구 절대 금지**: 구매·클릭 유도 표현은 "cta" 필드에만 작성
 
 ### subtitle / cta
-- subtitle: title을 보완하는 맥락 추가 1줄. 구매 유도 표현 금지.
-- cta 필드가 있는 경우에만: "지금 확인 →" / "국내배송 가능 · 링크 클릭" 형식. 직접적 "구매" 표현 자제
+- subtitle: title을 보완하는 맥락 1줄. 구매 유도 표현 금지.
+- cta 필드가 있는 경우에만 작성.
 
-### 브랜드 특정성 — 절대 원칙
-- 완성된 각 슬라이드를 **"이걸 Nike·adidas·Lululemon 콘텐츠로 바꿔도 말이 되는가?"** 자문할 것
-- 된다면 → **반드시 다시 쓸 것**. Gymshark에만 해당하는 사실·수치·이름·에피소드를 슬라이드당 최소 1개 이상 포함
-- 나쁨: "운동에 집중할 수 있도록 설계된 제품입니다" (어느 브랜드에나 해당)
-- 좋음: "CBum이 Classic Physique 6연패를 준비하며 입은 바로 그 레깅스" (Gymshark만 해당)
-- 나쁨: "고품질 원단으로 만든 운동복" → 좋음: "Vital Seamless 원단 — 헬스장에서도, 퇴근 후 카페에서도"
-- **위 브랜드 지식 섹션의 사실·선수·제품명을 적극 활용할 것**
+### 브랜드 특정성
+- 완성된 각 슬라이드를 **"이걸 다른 계정 콘텐츠로 바꿔도 말이 되는가?"** 자문할 것
+- 된다면 → 이 채널에만 해당하는 사실·수치·이름·에피소드로 다시 쓸 것
 
 ### 서사 구조 (필수)
 - 슬라이드 1 (표지): 강한 후킹. 다음 슬라이드가 궁금하게 만듦
-- 슬라이드 2~N-1: 각각 독립된 가치 단위. 앞에서 던진 궁금증 해소 + 새 궁금증 생성
-- 마지막 슬라이드: 아래 "마지막 슬라이드 전용 규칙" 참고
-
-## ⛔ 마지막 슬라이드 전용 규칙 (절대 위반 금지)
-이 콘텐츠에는 이미 계정 CTA를 담당하는 고정 아웃트로 슬라이드가 별도로 존재한다.
-따라서 마지막 콘텐츠 슬라이드는 **감정·인사이트·여운**으로만 마무리해야 한다.
-
-**절대 금지 표현 (단어 하나라도 들어가면 실패)**:
-- "@gymspire", "gymspire.kr", "확인해", "확인하세요", "확인 →"
-- "국내배송", "배송", "빠른 배송", "당일출고"
-- "링크", "링크 클릭", "링크 인 바이오"
-- "구매", "구매하세요", "지금 구매"
-- "팔로우", "팔로우해", "팔로우하세요"
-- "리셀러", "공식 리셀러", "공식 판매처"
-- "지금 확인", "바로 확인", "확인 부탁"
-
-**마지막 슬라이드가 담아야 할 것**:
-- 앞 슬라이드 전체 흐름을 하나의 감정으로 압축하는 문장
-- Gymshark 고유 스토리·철학에서 끌어낸 인사이트 또는 여운
-- 독자가 혼자 반추하게 만드는 마무리. 행동 촉구 없음.
+- 슬라이드 2~N-1: 각각 독립된 가치 단위
+- 마지막 슬라이드: **감정·인사이트·여운**으로만 마무리. 행동 촉구, 링크, 팔로우 유도 절대 금지.
 ${AI_TONE_GUIDES[tone]}
 ${AI_SPEECH_GUIDES[speech] || AI_SPEECH_GUIDES.friendly}
 ${AI_TARGET_GUIDES[target] || AI_TARGET_GUIDES.all}`;
 
   const newsContext = (newsItems && newsItems.length > 0)
-    ? `\n## 최신 Gymshark 뉴스 헤드라인 (관련 있으면 콘텐츠에 자연스럽게 반영, 무관하면 무시)\n${newsItems.slice(0, 5).map(n => `- ${n.title} (${n.date})`).join('\n')}\n`
+    ? `\n## 최신 뉴스 헤드라인 (관련 있으면 자연스럽게 반영, 무관하면 무시)\n${newsItems.slice(0, 5).map(n => `- ${n.title} (${n.date})`).join('\n')}\n`
     : '';
 
   const userMsg = `요청 내용: ${keyword}${newsContext}
@@ -1561,8 +1577,6 @@ ${slideDescs}
 - 생성 즉시 실제 계정에 올릴 수 있는 수준으로 작성할 것
 - 각 슬라이드 body는 내용이 충분히 채워진 완성된 문장으로 작성
 - 두루뭉술하거나 뻔한 표현은 삭제하고 구체적 사실·감정·행동으로 대체
-- **각 슬라이드에 Gymshark 고유 팩트(선수명·제품명·수치·에피소드) 최소 1개 이상 포함** — 없으면 불합격
-- Nike/adidas/Lululemon과 교체해도 말이 되는 슬라이드는 작성 금지
 
 ## 응답 형식
 JSON만 응답. 다른 텍스트 일절 없음.
@@ -1971,7 +1985,9 @@ async function fetchGymsharkNews(forceRefresh) {
   }
   if (state.appMode === 'news') renderFullNewsPanel('loading');
   try {
-    const res = await fetch('/api/news');
+    const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
+    const keywords = (ch.news_keywords || []).join(',');
+    const res = await fetch(`/api/news${keywords ? `?keywords=${encodeURIComponent(keywords)}` : ''}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -1989,16 +2005,17 @@ function renderFullNewsPanel(status) {
   const view = document.getElementById('newsView');
   if (!view) return;
 
+  const _newsCh = (state.channels || []).find(c => c.id === state.projectId) || {};
   const header = `
     <div class="news-view-header">
       <div>
-        <span class="news-view-eyebrow">GYMSHARK</span>
+        <span class="news-view-eyebrow">${(_newsCh.name || 'NEWS').toUpperCase()}</span>
         <h2 class="news-view-title">최신 뉴스</h2>
         <p class="news-view-sub">헤드라인을 클릭하면 AI 포스트 생성으로 바로 연결됩니다</p>
       </div>
       <div class="news-view-actions">
-        <button class="news-refresh-btn" id="newsRefreshBtn">↻ 새로고침</button>
-        <button class="news-back-btn" id="newsBackBtn">← 편집으로</button>
+        <button class="news-refresh-btn" id="newsRefreshBtn">새로고침</button>
+        <button class="news-back-btn" id="newsBackBtn">편집으로</button>
       </div>
     </div>`;
 

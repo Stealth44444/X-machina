@@ -1,30 +1,17 @@
 let dashState = {
   channels: [],
   posts: [],
-  selectedChannelId: null,
-  selectedDate: null,
-  viewMode: 'week',
-  currentWeekStart: null,
+  editingChannel: null,
 };
-
-function getWeekStart(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 async function showDashboard() {
   document.querySelector('.app').style.display = 'none';
   const screen = document.getElementById('dashboardScreen');
   screen.style.display = 'flex';
-  screen.innerHTML = `<div class="dash-loading">불러오는 중...</div>`;
+  screen.innerHTML = '<div class="dash-loading">불러오는 중...</div>';
 
   dashState.channels = (typeof state !== 'undefined' && state.channels) || await dbGetChannels();
   dashState.posts = await dbGetAllPosts();
-  dashState.currentWeekStart = getWeekStart(new Date());
 
   renderDashboard();
 }
@@ -36,195 +23,436 @@ function hideDashboard() {
 
 function renderDashboard() {
   const screen = document.getElementById('dashboardScreen');
+  const pending = dashState.posts.filter(p => p.status !== 'published');
+  const totalSched = pending.filter(p => p.status === 'scheduled').length;
+  const totalDraft = pending.filter(p => p.status === 'draft').length;
+
   screen.innerHTML = `
     <div class="dash-inner">
       <div class="dash-header">
-        <span class="dash-title">X MACHINA</span>
-        <div class="dash-channel-tabs">
-          <button class="dash-ch-tab ${!dashState.selectedChannelId ? 'active' : ''}" data-id="">전체</button>
-          ${dashState.channels.map(c => `
-            <button class="dash-ch-tab ${dashState.selectedChannelId === c.id ? 'active' : ''}"
-              data-id="${c.id}" style="--ch-color:${c.color}">
-              ${c.emoji} ${c.name}
-            </button>
-          `).join('')}
+        <div class="dash-header-left">
+          <span class="dash-title">X MACHINA</span>
+          <span class="dash-meta">예약 ${totalSched}  초안 ${totalDraft}</span>
         </div>
-        <button class="dash-close-btn" id="dashCloseBtn">편집으로 →</button>
+        <button class="dash-close-btn" id="dashCloseBtn">편집으로</button>
       </div>
-      <div class="dash-body">
-        <div class="dash-kanban" id="dashKanban"></div>
-        <div class="dash-calendar-col">
-          <div class="dash-cal-header">
-            <button class="dash-nav-btn" id="dashCalPrev">‹</button>
-            <span class="dash-cal-title" id="dashCalTitle"></span>
-            <button class="dash-nav-btn" id="dashCalNext">›</button>
-            <button class="dash-view-toggle" id="dashViewToggle">${dashState.viewMode === 'week' ? '월간' : '주간'}</button>
-          </div>
-          <div id="dashCalBody"></div>
-          <div class="dash-date-posts" id="dashDatePosts"></div>
-          <button class="dash-new-post-btn" id="dashNewPostBtn" style="display:none">+ 이 날짜에 새 포스트</button>
-        </div>
+      <div class="dash-columns" id="dashColumns">
+        ${dashState.channels.map(ch => renderChannelColumn(ch)).join('')}
       </div>
     </div>
   `;
+
   bindDashboardEvents();
-  renderKanban();
-  renderCalendar();
 }
 
-function getFilteredPosts() {
-  let posts = dashState.posts;
-  if (dashState.selectedChannelId) posts = posts.filter(p => p.channel_id === dashState.selectedChannelId);
-  if (dashState.selectedDate) {
-    const d = dashState.selectedDate.toDateString();
-    posts = posts.filter(p => {
-      const t = p.scheduled_at ? new Date(p.scheduled_at).toDateString() : new Date(p.created_at).toDateString();
-      return t === d;
+function renderChannelColumn(ch) {
+  const chPosts = dashState.posts
+    .filter(p => p.channel_id === ch.id && p.status !== 'published')
+    .sort((a, b) => {
+      if (a.status === 'scheduled' && b.status !== 'scheduled') return -1;
+      if (b.status === 'scheduled' && a.status !== 'scheduled') return 1;
+      if (a.status === 'scheduled' && b.status === 'scheduled')
+        return new Date(a.scheduled_at) - new Date(b.scheduled_at);
+      return new Date(b.created_at) - new Date(a.created_at);
     });
-  }
-  return posts;
-}
 
-function renderKanban() {
-  const posts = dashState.selectedDate ? getFilteredPosts() : dashState.posts.filter(p =>
-    !dashState.selectedChannelId || p.channel_id === dashState.selectedChannelId
-  );
-  const byStatus = { draft: [], scheduled: [], published: [] };
-  posts.forEach(p => (byStatus[p.status] || byStatus.draft).push(p));
+  const sched = chPosts.filter(p => p.status === 'scheduled').length;
+  const draft = chPosts.filter(p => p.status === 'draft').length;
+  const published = dashState.posts.filter(p => p.channel_id === ch.id && p.status === 'published').length;
 
-  const labels = { draft: 'DRAFT', scheduled: 'SCHEDULED', published: 'PUBLISHED' };
-  document.getElementById('dashKanban').innerHTML = ['draft', 'scheduled', 'published'].map(s => `
-    <div class="dash-col">
-      <div class="dash-col-header">
-        <span>${labels[s]}</span>
-        <span class="dash-col-count">${byStatus[s].length}</span>
+  return `
+    <div class="dash-col" data-channel-id="${ch.id}">
+      <div class="dash-col-header" style="border-top-color:${ch.color}">
+        <div class="dash-col-title-row">
+          <span class="dash-col-name">${ch.name}</span>
+          <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
+        </div>
+        <div class="dash-col-counts">
+          <span class="dash-count ${sched > 0 ? 'dash-count--sched' : ''}">예약 ${sched}</span>
+          <span class="dash-count">초안 ${draft}</span>
+          <span class="dash-count dash-count--pub">발행 ${published}</span>
+        </div>
       </div>
-      <div class="dash-cards" id="dashCol-${s}">
-        ${byStatus[s].map(p => renderPostCard(p)).join('')}
+      <div class="dash-col-body">
+        ${chPosts.length === 0
+          ? '<div class="dash-col-empty">예약된 포스트 없음</div>'
+          : chPosts.map(p => renderPostCard(p)).join('')}
+      </div>
+      <div class="dash-col-footer">
+        <button class="dash-new-btn" data-channel-id="${ch.id}">새 포스트</button>
       </div>
     </div>
-  `).join('');
-
-  document.querySelectorAll('.dash-card').forEach(card => {
-    card.addEventListener('click', () => openPostFromDashboard(card.dataset.id));
-  });
+  `;
 }
 
 function renderPostCard(post) {
-  const ch = dashState.channels.find(c => c.id === post.channel_id);
-  const date = post.scheduled_at
+  const title = (post.presets && post.presets.name) || post.caption || '제목 없음';
+  const isSched = post.status === 'scheduled';
+  const dateStr = isSched && post.scheduled_at
     ? new Date(post.scheduled_at).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '미예약';
-  const thumb = post.thumbnail_url
-    ? `<div class="dash-card-thumb" style="background-image:url('${post.thumbnail_url}')"></div>`
-    : `<div class="dash-card-thumb dash-card-thumb--empty">${ch?.emoji || '📷'}</div>`;
-  const titleText = (post.presets && post.presets.name) || post.caption || '제목 없음';
+  const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || './gymspire-logo.png';
+  const slideCount = post.slide_images ? post.slide_images.length : 0;
+  const safeCaption = escSafe(post.caption || '');
+
   return `
-    <div class="dash-card" data-id="${post.id}">
-      ${thumb}
-      <div class="dash-card-body">
-        <div class="dash-card-ch" style="color:${ch?.color || '#ffffff'}">${ch?.emoji || ''} ${ch?.name || ''}</div>
-        <div class="dash-card-name">${titleText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-        <div class="dash-card-date">${date}</div>
+    <div class="dash-post-card">
+      <div class="dash-post-top">
+        <span class="dash-status dash-status--${post.status}">${isSched ? '검수 대기' : (post.status === 'published' ? '발행 완료' : '초안')}</span>
+        <span class="dash-post-date">${dateStr}</span>
+      </div>
+      <div class="dash-post-thumb-wrap" data-post-id="${post.id}" title="클릭하여 슬라이드 전체 보기">
+        <img src="${thumbUrl}" alt="미리보기 썸네일" class="dash-post-thumb">
+        <div class="dash-post-thumb-overlay">
+          <span>🔍 슬라이드 ${slideCount}장 보기</span>
+        </div>
+      </div>
+      <div class="dash-post-title">${safeTitle}</div>
+      <div class="dash-post-caption-wrap">
+        <textarea class="dash-post-caption-input" data-post-id="${post.id}" placeholder="인스타그램 캡션 입력 (수정 시 자동 저장)..." rows="3">${safeCaption}</textarea>
+        <span class="dash-caption-saved-hint" id="captionHint_${post.id}" style="display:none">✓ 저장됨</span>
+      </div>
+      <div class="dash-post-actions">
+        <button class="dash-post-btn" data-post-id="${post.id}" data-channel-id="${post.channel_id}">편집</button>
+        <button class="dash-post-btn dash-post-btn--preview" data-post-id="${post.id}">미리보기</button>
+        <button class="dash-post-btn dash-post-btn--download" data-post-id="${post.id}" title="슬라이드 다운로드 및 캡션 복사">다운로드</button>
+        ${isSched ? `<button class="dash-post-btn dash-post-btn--publish" data-post-id="${post.id}">지금 발행</button>` : ''}
       </div>
     </div>
   `;
-}
-
-function renderCalendar() {
-  const title = document.getElementById('dashCalTitle');
-  const body = document.getElementById('dashCalBody');
-  if (!title || !body) return;
-
-  const ws = dashState.currentWeekStart;
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(ws); d.setDate(ws.getDate() + i); return d;
-  });
-  const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
-  const ms = ws.getMonth() + 1;
-  const me = days[6].getMonth() + 1;
-  title.textContent = ms === me
-    ? `${ws.getFullYear()}년 ${ms}월`
-    : `${ws.getFullYear()}년 ${ms}월 – ${me}월`;
-
-  const today = new Date().toDateString();
-  const selDate = dashState.selectedDate?.toDateString();
-
-  body.innerHTML = `
-    <div class="dash-cal-grid">
-      ${dayNames.map(d => `<div class="dash-cal-dayname">${d}</div>`).join('')}
-      ${days.map(d => {
-        const ds = d.toDateString();
-        const isToday = ds === today;
-        const isSel = ds === selDate;
-        const dayPosts = dashState.posts.filter(p => {
-          if (dashState.selectedChannelId && p.channel_id !== dashState.selectedChannelId) return false;
-          const t = p.scheduled_at ? new Date(p.scheduled_at).toDateString() : null;
-          return t === ds;
-        });
-        const dots = dayPosts.map(p => {
-          const ch = dashState.channels.find(c => c.id === p.channel_id);
-          return `<span class="dash-cal-dot" style="background:${ch?.color || '#ffffff'}" title="${ch?.name || ''}"></span>`;
-        }).join('');
-        return `
-          <button class="dash-cal-day ${isToday ? 'today' : ''} ${isSel ? 'selected' : ''}"
-            data-date="${d.toISOString()}">
-            <span class="dash-cal-daynum">${d.getDate()}</span>
-            <div class="dash-cal-dots">${dots}</div>
-          </button>
-        `;
-      }).join('')}
-    </div>
-  `;
-
-  body.querySelectorAll('.dash-cal-day').forEach(btn => {
-    btn.addEventListener('click', () => {
-      dashState.selectedDate = new Date(btn.dataset.date);
-      renderCalendar();
-      renderKanban();
-      renderDatePostsPanel();
-    });
-  });
-}
-
-function renderDatePostsPanel() {
-  const panel = document.getElementById('dashDatePosts');
-  const newBtn = document.getElementById('dashNewPostBtn');
-  if (!dashState.selectedDate) { panel.innerHTML = ''; newBtn.style.display = 'none'; return; }
-  const d = dashState.selectedDate;
-  const label = d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
-  panel.innerHTML = `<div class="dash-date-label">${label} 예약</div>`;
-  newBtn.style.display = '';
-  newBtn.onclick = () => hideDashboard();
 }
 
 function bindDashboardEvents() {
   document.getElementById('dashCloseBtn').addEventListener('click', hideDashboard);
-  document.getElementById('dashCalPrev').addEventListener('click', () => {
-    dashState.currentWeekStart.setDate(dashState.currentWeekStart.getDate() - 7);
-    dashState.selectedDate = null;
-    renderCalendar();
-    renderKanban();
+
+  document.querySelectorAll('.dash-post-btn:not(.dash-post-btn--publish):not(.dash-post-btn--preview):not(.dash-post-btn--download)').forEach(btn => {
+    btn.addEventListener('click', () => openPostInEditor(btn.dataset.postId, btn.dataset.channelId));
   });
-  document.getElementById('dashCalNext').addEventListener('click', () => {
-    dashState.currentWeekStart.setDate(dashState.currentWeekStart.getDate() + 7);
-    dashState.selectedDate = null;
-    renderCalendar();
-    renderKanban();
+
+  document.querySelectorAll('.dash-post-btn--publish').forEach(btn => {
+    btn.addEventListener('click', () => publishPost(btn.dataset.postId, btn));
   });
-  document.querySelectorAll('.dash-ch-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      dashState.selectedChannelId = tab.dataset.id || null;
-      dashState.selectedDate = null;
-      renderDashboard();
+
+  document.querySelectorAll('.dash-post-btn--preview, .dash-post-thumb-wrap').forEach(btn => {
+    btn.addEventListener('click', () => openLightbox(btn.dataset.postId));
+  });
+
+  document.querySelectorAll('.dash-post-btn--download').forEach(btn => {
+    btn.addEventListener('click', () => downloadPostImages(btn.dataset.postId));
+  });
+
+  document.querySelectorAll('.dash-post-caption-input').forEach(inp => {
+    let timer = null;
+    inp.addEventListener('input', () => {
+      const hint = document.getElementById(`captionHint_${inp.dataset.postId}`);
+      if (hint) {
+        hint.textContent = '저장 중...';
+        hint.style.display = 'inline';
+        hint.style.color = '#888';
+      }
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          await dbUpdatePostCaption(inp.dataset.postId, inp.value);
+          if (hint) {
+            hint.textContent = '✓ 저장됨';
+            hint.style.color = '#2B9BF4';
+            setTimeout(() => { hint.style.display = 'none'; }, 2000);
+          }
+        } catch (e) {
+          if (hint) {
+            hint.textContent = '✗ 저장 실패';
+            hint.style.color = '#ff4444';
+          }
+        }
+      }, 1000);
     });
+
+    inp.addEventListener('blur', async () => {
+      clearTimeout(timer);
+      const hint = document.getElementById(`captionHint_${inp.dataset.postId}`);
+      try {
+        await dbUpdatePostCaption(inp.dataset.postId, inp.value);
+        if (hint) {
+          hint.textContent = '✓ 저장됨';
+          hint.style.display = 'inline';
+          hint.style.color = '#2B9BF4';
+          setTimeout(() => { hint.style.display = 'none'; }, 2000);
+        }
+      } catch (e) {
+        if (hint) {
+          hint.textContent = '✗ 저장 실패';
+          hint.style.color = '#ff4444';
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('.dash-new-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (typeof loadChannel === 'function') loadChannel(btn.dataset.channelId);
+      hideDashboard();
+    });
+  });
+
+  document.querySelectorAll('.dash-col-settings').forEach(btn => {
+    btn.addEventListener('click', () => openChannelSettings(btn.dataset.channelId));
   });
 }
 
-async function openPostFromDashboard(postId) {
+async function openPostInEditor(postId, channelId) {
   const post = dashState.posts.find(p => p.id === postId);
   if (!post) return;
-  if (typeof loadChannel === 'function') await loadChannel(post.channel_id);
+  if (typeof loadChannel === 'function') await loadChannel(channelId);
   if (post.preset_id && typeof loadPreset === 'function') await loadPreset(post.preset_id);
   hideDashboard();
+}
+
+async function publishPost(postId, btn) {
+  if (!confirm('지금 바로 발행하시겠습니까?')) return;
+  btn.disabled = true;
+  btn.textContent = '발행 중...';
+  try {
+    const res = await fetch('/api/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_id: postId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '발행 실패');
+    dashState.posts = await dbGetAllPosts();
+    renderDashboard();
+  } catch (e) {
+    alert('발행 실패: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '지금 발행';
+  }
+}
+
+function openLightbox(postId) {
+  const post = dashState.posts.find(p => p.id === postId);
+  if (!post || !post.slide_images || post.slide_images.length === 0) {
+    alert('미리볼 슬라이드 이미지가 없습니다.');
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'lightbox-overlay';
+  overlay.id = 'lightboxOverlay';
+  overlay.innerHTML = `
+    <div class="lightbox-container">
+      <div class="lightbox-header">
+        <span class="lightbox-title">${escSafe(post.presets?.name || post.caption || '슬라이드 미리보기')} (${post.slide_images.length}장)</span>
+        <button class="lightbox-close" id="lightboxClose">닫기</button>
+      </div>
+      <div class="lightbox-body">
+        <div class="lightbox-slides">
+          ${post.slide_images.map((url, i) => `
+            <div class="lightbox-slide">
+              <img src="${url}" alt="Slide ${i+1}">
+              <span class="lightbox-slide-num">${i+1} / ${post.slide_images.length}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.getElementById('lightboxClose').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function downloadPostImages(postId) {
+  const post = dashState.posts.find(p => p.id === postId);
+  if (!post || !post.slide_images || post.slide_images.length === 0) {
+    alert('다운로드할 슬라이드 이미지가 없습니다.');
+    return;
+  }
+
+  const caption = post.caption || '';
+  if (caption) {
+    try {
+      await navigator.clipboard.writeText(caption);
+      alert('캡션이 클립보드에 복사되었습니다! 인스타그램에 붙여넣기 하세요.');
+    } catch (e) {
+      console.log('Clipboard copy failed:', e);
+    }
+  }
+
+  post.slide_images.forEach((url, i) => {
+    fetch(url)
+      .then(res => res.blob())
+      .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `post_${postId}_slide_${i+1}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      })
+      .catch(err => console.error('Download error:', err));
+  });
+}
+
+// ── Channel Settings Modal ────────────────────────────────────────────────
+
+function openChannelSettings(channelId) {
+  const ch = dashState.channels.find(c => c.id === channelId);
+  if (!ch) return;
+  dashState.editingChannel = ch;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'ch-settings-overlay';
+  overlay.id = 'chSettingsOverlay';
+  overlay.innerHTML = `
+    <div class="ch-settings-panel">
+      <div class="ch-settings-header">
+        <span class="ch-settings-title">채널 설정</span>
+        <button class="ch-settings-close" id="chSettingsClose">닫기</button>
+      </div>
+
+      <div class="ch-settings-body">
+        <div class="ch-field">
+          <label class="ch-label">채널 이름</label>
+          <input class="ch-input" id="chName" type="text" value="${escSafe(ch.name)}">
+        </div>
+
+        <div class="ch-field">
+          <label class="ch-label">브랜드 컨텍스트</label>
+          <p class="ch-hint">AI 포스트 생성 시 계정 특성을 반영하는 데 사용됩니다.</p>
+          <textarea class="ch-input ch-textarea" id="chDesc" rows="4">${escSafe(ch.description || '')}</textarea>
+        </div>
+
+        <div class="ch-field">
+          <label class="ch-label">뉴스 키워드</label>
+          <p class="ch-hint">쉼표로 구분. 채널 주제에 맞는 최신 뉴스를 검색합니다.</p>
+          <input class="ch-input" id="chKeywords" type="text"
+            value="${escSafe((ch.news_keywords || []).join(', '))}">
+        </div>
+
+        <div class="ch-field">
+          <label class="ch-label">AI 시스템 프롬프트 <span class="ch-optional">선택</span></label>
+          <p class="ch-hint">비워두면 기본 프롬프트가 사용됩니다. 직접 입력하면 완전히 대체됩니다.</p>
+          <textarea class="ch-input ch-textarea" id="chSystemPrompt" rows="4">${escSafe(ch.ai_system_prompt || '')}</textarea>
+        </div>
+
+        <div class="ch-field ch-field--row">
+          <div class="ch-field-inner">
+            <label class="ch-label">채널 색상</label>
+            <input class="ch-input ch-input--color" id="chColor" type="color" value="${ch.color || '#ffffff'}">
+          </div>
+          <div class="ch-field-inner" style="flex:3">
+            <label class="ch-label">색상 HEX</label>
+            <input class="ch-input" id="chColorHex" type="text" value="${escSafe(ch.color || '#ffffff')}">
+          </div>
+        </div>
+
+        <div class="ch-divider">
+          <span class="ch-divider-label">Instagram</span>
+        </div>
+
+        <div class="ch-field">
+          <label class="ch-label">Instagram 사용자 ID</label>
+          <p class="ch-hint">Graph API Explorer → id 필드. 예: 17841400000000000</p>
+          <input class="ch-input" id="chIgUserId" type="text" value="${escSafe(ch.ig_user_id || '')}" placeholder="17841400000000000">
+        </div>
+
+        <div class="ch-field">
+          <label class="ch-label">액세스 토큰</label>
+          <p class="ch-hint">Long-lived User Access Token (60일, 자동 갱신됨)</p>
+          <input class="ch-input" id="chIgToken" type="password" value="${escSafe(ch.ig_access_token || '')}" placeholder="EAAxxxxx...">
+          <button class="ch-token-toggle" id="chTokenToggle">표시</button>
+        </div>
+      </div>
+
+      <div class="ch-settings-footer">
+        <button class="ch-btn ch-btn--danger" id="chDeleteBtn">채널 삭제</button>
+        <button class="ch-btn ch-btn--primary" id="chSaveBtn">저장</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const colorInput = document.getElementById('chColor');
+  const colorHex = document.getElementById('chColorHex');
+  colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
+  colorHex.addEventListener('input', () => {
+    if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
+  });
+
+  document.getElementById('chTokenToggle').addEventListener('click', (e) => {
+    const inp = document.getElementById('chIgToken');
+    const showing = inp.type === 'text';
+    inp.type = showing ? 'password' : 'text';
+    e.target.textContent = showing ? '표시' : '숨기기';
+  });
+
+  document.getElementById('chSettingsClose').addEventListener('click', closeChannelSettings);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeChannelSettings(); });
+
+  document.getElementById('chSaveBtn').addEventListener('click', saveChannelSettings);
+  document.getElementById('chDeleteBtn').addEventListener('click', deleteChannel);
+}
+
+function closeChannelSettings() {
+  document.getElementById('chSettingsOverlay')?.remove();
+  dashState.editingChannel = null;
+}
+
+async function saveChannelSettings() {
+  const ch = dashState.editingChannel;
+  if (!ch) return;
+
+  const saveBtn = document.getElementById('chSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '저장 중...';
+
+  const keywords = document.getElementById('chKeywords').value
+    .split(',').map(k => k.trim()).filter(Boolean);
+
+  const updates = {
+    id: ch.id,
+    name: document.getElementById('chName').value.trim() || ch.name,
+    description: document.getElementById('chDesc').value.trim(),
+    color: document.getElementById('chColorHex').value.trim() || ch.color,
+    news_keywords: keywords,
+    ai_system_prompt: document.getElementById('chSystemPrompt').value.trim() || null,
+    ig_user_id: document.getElementById('chIgUserId').value.trim() || null,
+    ig_access_token: document.getElementById('chIgToken').value.trim() || null,
+  };
+
+  try {
+    await dbUpsertChannel(updates);
+    dashState.channels = await dbGetChannels();
+    if (typeof state !== 'undefined') state.channels = dashState.channels;
+    closeChannelSettings();
+    renderDashboard();
+  } catch (e) {
+    alert('저장 실패: ' + e.message);
+    saveBtn.disabled = false;
+    saveBtn.textContent = '저장';
+  }
+}
+
+async function deleteChannel() {
+  const ch = dashState.editingChannel;
+  if (!ch) return;
+  if (!confirm(`"${ch.name}" 채널을 삭제하시겠습니까?\n연결된 프리셋과 포스트도 모두 삭제됩니다.`)) return;
+
+  try {
+    await dbDeleteChannel(ch.id);
+    dashState.channels = await dbGetChannels();
+    if (typeof state !== 'undefined') state.channels = dashState.channels;
+    closeChannelSettings();
+    renderDashboard();
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+function escSafe(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

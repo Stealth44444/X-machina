@@ -77,3 +77,9 @@ async function dbUpdatePostStatus(id, status, scheduledAt) {
     .from('posts').update(update).eq('id', id);
   if (error) throw error;
 }
+
+async function dbUpdatePostCaption(id, caption) {
+  const { error } = await supabaseClient
+    .from('posts').update({ caption }).eq('id', id);
+  if (error) throw error;
+}

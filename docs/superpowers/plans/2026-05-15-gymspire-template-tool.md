@@ -62,7 +62,7 @@
         <div id="templateList"></div>
       </div>
       <div class="sidebar-section pinterest-section">
-        <p class="section-label">PINTEREST</p>
+        <p class="section-label">Image Source Pallet</p>
         <div id="keywordGrid"></div>
       </div>
     </aside>

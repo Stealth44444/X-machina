@@ -62,7 +62,7 @@
       </div>
       <button class="export-btn ai-gen-btn" id="aiGenBtn">AI 포스트 생성</button>
       <button class="export-btn" id="savePresetBtn">진행상황 저장</button>
-      <button class="export-btn" id="scheduleBtn">발행 예약</button>
+      <button class="export-btn" id="scheduleBtn">검수 큐 등록</button>
       <button class="export-btn" id="exportAllBtn">전체 내보내기</button>
       <button class="export-btn" id="exportBtn" style="margin-top:0;">PNG 내보내기</button>
     </aside>
@@ -75,17 +75,13 @@
       <div class="ai-panel-header">
         <div class="ai-panel-header-row">
           <div>
-            <span class="ai-panel-eyebrow">SCHEDULE</span>
-            <h2 class="ai-panel-title">발행 예약</h2>
+            <span class="ai-panel-eyebrow">REVIEW QUEUE</span>
+            <h2 class="ai-panel-title">검수 큐 등록</h2>
           </div>
           <button class="ai-btn ai-btn-ghost" id="scheduleModalClose">닫기</button>
         </div>
       </div>
       <div class="ai-body">
-        <div class="ai-field">
-          <label class="ai-label">예약 날짜 · 시간</label>
-          <input class="ai-input" type="datetime-local" id="scheduleDateTime">
-        </div>
         <div class="ai-field">
           <label class="ai-label">캡션 (선택)</label>
           <textarea class="ai-input ai-textarea" id="scheduleCaption" placeholder="인스타그램 게시 캡션"></textarea>
@@ -93,7 +89,7 @@
       </div>
       <div class="ai-actions">
         <div class="ai-actions-right">
-          <button class="ai-btn ai-btn-primary" id="scheduleConfirmBtn">예약 등록</button>
+          <button class="ai-btn ai-btn-primary" id="scheduleConfirmBtn">검수 큐에 올리기</button>
         </div>
       </div>
     </div>

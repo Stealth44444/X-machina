@@ -5,8 +5,9 @@ function cutoff(ms = CUTOFF_MS) { return Date.now() - ms; }
 function msToDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
 
 // ── Google News RSS ──────────────────────────────────────────────────────
-async function fetchGoogleNews() {
-  const url = 'https://news.google.com/rss/search?q=gymshark&hl=en-US&gl=US&ceid=US:en';
+async function fetchGoogleNews(query) {
+  const q = encodeURIComponent(query);
+  const url = `https://news.google.com/rss/search?q=${q}&hl=ko&gl=KR&ceid=KR:ko`;
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } });
   if (!res.ok) return [];
   const xml = await res.text();
@@ -148,9 +149,8 @@ async function fetchYoutube(apiKey) {
 }
 
 // ── Bing News RSS ────────────────────────────────────────────────────────
-// Bing RSS는 count 파라미터 미지원 — 쿼리만 조정
-async function fetchBingNews() {
-  const url = 'https://www.bing.com/news/search?q=gymshark&format=rss';
+async function fetchBingNews(query) {
+  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss`;
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   });
@@ -174,9 +174,9 @@ async function fetchBingNews() {
 }
 
 // ── NewsAPI.org ───────────────────────────────────────────────────────────
-// searchIn=title 제거 → title+description+content 전체 검색, 결과 수 대폭 증가
-async function fetchNewsApi(apiKey) {
-  const url = `https://newsapi.org/v2/everything?q=%22gymshark%22&sortBy=publishedAt&language=en&pageSize=30&apiKey=${apiKey}`;
+async function fetchNewsApi(apiKey, keywords) {
+  const q = encodeURIComponent(keywords.map(k => `"${k}"`).join(' OR '));
+  const url = `https://newsapi.org/v2/everything?q=${q}&sortBy=publishedAt&pageSize=30&apiKey=${apiKey}`;
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   if (!res.ok) return [];
   const data = await res.json();
@@ -198,15 +198,20 @@ export default async function handler(req, res) {
     const ytKey      = process.env.YOUTUBE_API_KEY;
     const newsApiKey = process.env.NEWSAPI_KEY;
 
+    // Accept comma-separated keywords from client; fall back to 'gymshark' for legacy
+    const rawKeywords = (req.query.keywords || 'gymshark')
+      .split(',').map(k => k.trim()).filter(Boolean);
+    const primaryQuery = rawKeywords.join(' OR ');
+    const isGymshark = rawKeywords.some(k => /gymshark|gymspire/i.test(k));
+
     const [gnews, bing, newsapi, blog, youtube] = await Promise.allSettled([
-      fetchGoogleNews(),
-      fetchBingNews(),
-      newsApiKey ? fetchNewsApi(newsApiKey) : Promise.resolve([]),
-      fetchBlog(),
-      ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
+      fetchGoogleNews(primaryQuery),
+      fetchBingNews(primaryQuery),
+      newsApiKey ? fetchNewsApi(newsApiKey, rawKeywords) : Promise.resolve([]),
+      isGymshark ? fetchBlog() : Promise.resolve([]),
+      isGymshark && ytKey ? fetchYoutube(ytKey) : Promise.resolve([]),
     ]);
 
-    // Bing은 Google News와 같은 'news' 탭으로 통합 (결과 수가 적어 별도 탭 의미 없음)
     const gnewsItems = gnews.status === 'fulfilled' ? gnews.value : [];
     const bingItems  = (bing.status === 'fulfilled' ? bing.value : []).map(i => ({ ...i, source: 'news' }));
     const sourceResults = {
@@ -220,7 +225,7 @@ export default async function handler(req, res) {
     );
 
     const seen = new Set();
-    let items = Object.values(sourceResults).flat()
+    const items = Object.values(sourceResults).flat()
       .sort((a, b) => b.ms - a.ms)
       .filter(item => {
         const key = item.title.toLowerCase().slice(0, 40);
