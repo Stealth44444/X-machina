@@ -1087,25 +1087,16 @@ body {
   overflow: hidden;
 }
 
-.proj-layout {
+.proj-tabs-layout {
   display: flex;
+  flex-direction: column;
   flex: 1;
   overflow: hidden;
 }
 
-.proj-left {
-  width: 300px;
-  min-width: 260px;
-  background: #0f0f0f;
-  border-right: 1px solid #1a1a1a;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.proj-left-header {
-  padding: 32px 24px 20px;
+.proj-tabs-header {
+  padding: 28px 44px 0;
+  background: #0a0a0a;
   border-bottom: 1px solid #1a1a1a;
   flex-shrink: 0;
 }
@@ -1115,38 +1106,61 @@ body {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 3px;
-  color: #ffffff;
-  margin-bottom: 8px;
+  color: #444;
+  margin-bottom: 16px;
   text-transform: uppercase;
 }
 
-.proj-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: #e8e8e8;
-  letter-spacing: -0.3px;
-  margin: 0;
+.proj-tab-btns {
+  display: flex;
 }
 
-.proj-left-body {
+.proj-tab-btn {
+  padding: 10px 0;
+  margin-right: 28px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #444;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.proj-tab-btn:hover { color: #888; }
+
+.proj-tab-btn.active {
+  color: #e8e8e8;
+  border-bottom-color: #ffffff;
+}
+
+.proj-tab-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   scrollbar-width: thin;
   scrollbar-color: #2a2a2a transparent;
 }
 
-.proj-left-footer {
-  padding: 14px 24px;
-  border-top: 1px solid #1a1a1a;
+.proj-settings-body {
+  padding: 32px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 580px;
+  width: 100%;
+}
+
+.proj-settings-footer {
+  padding: 0 44px 32px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 12px;
-  flex-shrink: 0;
+  max-width: 580px;
 }
 
 .proj-save-status {
@@ -1155,36 +1169,18 @@ body {
   letter-spacing: 1px;
 }
 
-.proj-right {
+#projNewsPane {
   flex: 1;
   overflow-y: auto;
-  padding: 40px 44px;
+  padding: 36px 44px;
   scrollbar-width: thin;
   scrollbar-color: #2a2a2a transparent;
 }
 
-.proj-news-header {
+.proj-news-actions {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 28px;
-}
-
-.proj-news-eyebrow {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  color: #ffffff;
-  margin-bottom: 8px;
-}
-
-.proj-news-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: #e8e8e8;
-  letter-spacing: -0.3px;
-  margin: 0;
+  justify-content: flex-end;
+  margin-bottom: 20px;
 }
 
 .news-view-header {

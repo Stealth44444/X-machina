@@ -1927,6 +1927,7 @@ const NEWS_CACHE_TTL = 30 * 60 * 1000;
 const NEWS_PER_PAGE = 8;
 let newsPage = 0;
 let newsFilter = 'all';
+let projTab = 'settings';
 
 const NEWS_SOURCE_LABELS = {
   news:    { label: 'News',    short: 'News',    desc: 'Google · Bing RSS — keyword search, last 90 days' },
@@ -1985,65 +1986,79 @@ function renderProjectSettings() {
   if (!view) return;
   const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
 
-  view.innerHTML = `
-    <div class="proj-layout">
-      <div class="proj-left">
-        <div class="proj-left-header">
-          <span class="proj-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
-          <h2 class="proj-title">프로젝트 설정</h2>
+  const settingsHTML = `
+    <div class="proj-settings-body">
+      <div class="ch-field">
+        <label class="ch-label">채널 이름</label>
+        <input class="ch-input" id="projName" type="text" value="${escHtml(ch.name || '')}">
+      </div>
+      <div class="ch-field">
+        <label class="ch-label">브랜드 컨텍스트</label>
+        <p class="ch-hint">AI 포스트 생성 시 계정 특성을 반영합니다</p>
+        <textarea class="ch-input ch-textarea" id="projDesc" rows="4">${escHtml(ch.description || '')}</textarea>
+      </div>
+      <div class="ch-field">
+        <label class="ch-label">뉴스 키워드 <span class="ch-optional">영문 권장</span></label>
+        <p class="ch-hint">쉼표로 구분. 뉴스 피드 및 AI 컨텍스트에 사용됩니다.</p>
+        <input class="ch-input" id="projKeywords" type="text" value="${escHtml((ch.news_keywords || []).join(', '))}">
+      </div>
+      <div class="ch-field">
+        <label class="ch-label">AI 시스템 프롬프트 <span class="ch-optional">선택</span></label>
+        <p class="ch-hint">비워두면 기본 프롬프트 사용. 입력 시 완전 대체.</p>
+        <textarea class="ch-input ch-textarea" id="projSystemPrompt" rows="5">${escHtml(ch.ai_system_prompt || '')}</textarea>
+      </div>
+      <div class="ch-field ch-field--row">
+        <div class="ch-field-inner">
+          <label class="ch-label">색상</label>
+          <input class="ch-input ch-input--color" id="projColor" type="color" value="${escHtml(ch.color || '#ffffff')}">
         </div>
-        <div class="proj-left-body">
-          <div class="ch-field">
-            <label class="ch-label">채널 이름</label>
-            <input class="ch-input" id="projName" type="text" value="${escHtml(ch.name || '')}">
-          </div>
-          <div class="ch-field">
-            <label class="ch-label">브랜드 컨텍스트</label>
-            <p class="ch-hint">AI 포스트 생성 시 계정 특성을 반영합니다</p>
-            <textarea class="ch-input ch-textarea" id="projDesc" rows="4">${escHtml(ch.description || '')}</textarea>
-          </div>
-          <div class="ch-field">
-            <label class="ch-label">뉴스 키워드 <span class="ch-optional">영문 권장</span></label>
-            <p class="ch-hint">쉼표로 구분. 뉴스 피드 및 AI 컨텍스트에 사용됩니다.</p>
-            <input class="ch-input" id="projKeywords" type="text" value="${escHtml((ch.news_keywords || []).join(', '))}">
-          </div>
-          <div class="ch-field">
-            <label class="ch-label">AI 시스템 프롬프트 <span class="ch-optional">선택</span></label>
-            <p class="ch-hint">비워두면 기본 프롬프트 사용. 입력 시 완전 대체.</p>
-            <textarea class="ch-input ch-textarea" id="projSystemPrompt" rows="5">${escHtml(ch.ai_system_prompt || '')}</textarea>
-          </div>
-          <div class="ch-field ch-field--row">
-            <div class="ch-field-inner">
-              <label class="ch-label">색상</label>
-              <input class="ch-input ch-input--color" id="projColor" type="color" value="${escHtml(ch.color || '#ffffff')}">
-            </div>
-            <div class="ch-field-inner" style="flex:3">
-              <label class="ch-label">HEX</label>
-              <input class="ch-input" id="projColorHex" type="text" value="${escHtml(ch.color || '#ffffff')}">
-            </div>
-          </div>
-        </div>
-        <div class="proj-left-footer">
-          <span class="proj-save-status" id="projSaveStatus"></span>
-          <button class="ch-btn ch-btn--primary" id="projSaveBtn">저장</button>
+        <div class="ch-field-inner" style="flex:3">
+          <label class="ch-label">HEX</label>
+          <input class="ch-input" id="projColorHex" type="text" value="${escHtml(ch.color || '#ffffff')}">
         </div>
       </div>
-      <div class="proj-right" id="projNewsPane">
-        <div class="news-view-empty">불러오는 중...</div>
+    </div>
+    <div class="proj-settings-footer">
+      <span class="proj-save-status" id="projSaveStatus"></span>
+      <button class="ch-btn ch-btn--primary" id="projSaveBtn">저장</button>
+    </div>`;
+
+  const newsHTML = `<div id="projNewsPane"><div class="news-view-empty">불러오는 중...</div></div>`;
+
+  view.innerHTML = `
+    <div class="proj-tabs-layout">
+      <div class="proj-tabs-header">
+        <span class="proj-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
+        <div class="proj-tab-btns">
+          <button class="proj-tab-btn ${projTab === 'settings' ? 'active' : ''}" data-tab="settings">설정</button>
+          <button class="proj-tab-btn ${projTab === 'news' ? 'active' : ''}" data-tab="news">뉴스 피드</button>
+        </div>
+      </div>
+      <div class="proj-tab-content">
+        ${projTab === 'settings' ? settingsHTML : newsHTML}
       </div>
     </div>`;
 
-  const colorInput = document.getElementById('projColor');
-  const colorHex = document.getElementById('projColorHex');
-  colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
-  colorHex.addEventListener('input', () => {
-    if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
+  view.querySelectorAll('.proj-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      projTab = btn.dataset.tab;
+      renderProjectSettings();
+    });
   });
-  document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
 
-  renderFullNewsPanel(newsCache.items.length ? undefined : 'loading');
-  if (!newsCache.items.length || Date.now() - newsCache.fetchedAt > NEWS_CACHE_TTL) {
-    fetchGymsharkNews();
+  if (projTab === 'settings') {
+    const colorInput = document.getElementById('projColor');
+    const colorHex = document.getElementById('projColorHex');
+    colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
+    colorHex.addEventListener('input', () => {
+      if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
+    });
+    document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
+  } else {
+    renderFullNewsPanel(newsCache.items.length ? undefined : 'loading');
+    if (!newsCache.items.length || Date.now() - newsCache.fetchedAt > NEWS_CACHE_TTL) {
+      fetchGymsharkNews();
+    }
   }
 }
 
@@ -2085,20 +2100,12 @@ function renderFullNewsPanel(status) {
   const pane = document.getElementById('projNewsPane');
   if (!pane) return;
 
-  const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
-  const header = `
-    <div class="proj-news-header">
-      <div>
-        <span class="proj-news-eyebrow">${escHtml((ch.name || 'CHANNEL').toUpperCase())}</span>
-        <h3 class="proj-news-title">뉴스 피드</h3>
-      </div>
-      <button class="news-refresh-btn" id="newsRefreshBtn">새로고침</button>
-    </div>`;
+  const actions = `<div class="proj-news-actions"><button class="news-refresh-btn" id="newsRefreshBtn">새로고침</button></div>`;
 
   if (status === 'loading') {
-    pane.innerHTML = header + `<div class="news-view-empty">불러오는 중...</div>`;
+    pane.innerHTML = actions + `<div class="news-view-empty">불러오는 중...</div>`;
   } else if (status === 'error' || !newsCache.items.length) {
-    pane.innerHTML = header + `<div class="news-view-empty">소스를 불러올 수 없습니다</div>`;
+    pane.innerHTML = actions + `<div class="news-view-empty">소스를 불러올 수 없습니다</div>`;
   } else {
     const ALL_SOURCES = ['news', 'newsapi', 'blog', 'youtube'];
     const counts = Object.fromEntries(
@@ -2128,7 +2135,7 @@ function renderFullNewsPanel(status) {
         ? `<div class="news-source-desc">${escHtml(NEWS_SOURCE_LABELS[newsFilter].desc)}</div>`
         : ''}`;
 
-    pane.innerHTML = header + filterTabs + `
+    pane.innerHTML = actions + filterTabs + `
       <div class="news-cards-grid">
         ${pageItems.length ? pageItems.map(item => {
           const domain = item.url ? (() => { try { return new URL(item.url).hostname.replace(/^www\./, ''); } catch { return ''; } })() : '';
