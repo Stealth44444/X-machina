@@ -56,18 +56,18 @@ function getTemplate(id) {
 }
 
 window.outroSlide = function() {
+  const ch = (typeof state !== 'undefined' && state.channels && state.channels.find(c => c.id === state.projectId)) || { name: 'CHANNEL', description: '팔로우하고 더 많은 소식을 받아보세요' };
   return `
     <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.75) 60%,#000 100%);"></div>
-    <img src="./gymspire-logo.png" style="position:absolute;top:28px;left:50%;transform:translateX(-50%);height:130px;mix-blend-mode:multiply;opacity:0.6;pointer-events:none;">
-    <div style="position:absolute;top:50%;left:56px;right:56px;transform:translateY(-55%);">
-      <div style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1px;margin-bottom:28px;">🇰🇷 &nbsp;No.1 GYMSHARK 전문 커뮤니티</div>
-      <div style="font-size:72px;font-weight:900;color:#fff;line-height:1.05;margin-bottom:36px;letter-spacing:-2px;">Bad day?<br>Go gym.</div>
+    <div style="position:absolute;top:50%;left:56px;right:56px;transform:translate(0, -55%);">
+      <div style="font-size:24px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2px;margin-bottom:28px;text-transform:uppercase;">${ch.name}</div>
+      <div style="font-size:68px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:36px;letter-spacing:-1.5px;">Thanks for<br>watching.</div>
       <div style="width:48px;height:3px;background:#2B9BF4;margin-bottom:36px;"></div>
-      <div style="font-size:28px;font-weight:400;color:rgba(255,255,255,0.45);line-height:1.7;">국내배송 · 최신 컬렉션 · 착용 정보<br>팔로우하면 다 보입니다</div>
+      <div style="font-size:26px;font-weight:400;color:rgba(255,255,255,0.6);line-height:1.7;word-break:keep-all;">${ch.description || '팔로우하고 더 많은 소식을 받아보세요'}</div>
     </div>
     <div style="position:absolute;bottom:90px;left:56px;">
-      <div style="font-size:34px;font-weight:900;color:#2B9BF4;letter-spacing:1px;">@gymspire.kr</div>
-      <div style="font-size:19px;font-weight:400;color:rgba(255,255,255,0.2);margin-top:10px;letter-spacing:2px;">FOLLOW · LINK IN BIO</div>
+      <div style="font-size:32px;font-weight:900;color:#2B9BF4;letter-spacing:1px;">@${ch.id || 'channel'}</div>
+      <div style="font-size:18px;font-weight:400;color:rgba(255,255,255,0.2);margin-top:10px;letter-spacing:2px;">FOLLOW · LINK IN BIO</div>
     </div>
   `;
 };
@@ -265,7 +265,7 @@ async function confirmSchedule() {
       btn.textContent = '저장 중...';
       const saved = await dbUpsertPreset({
         channel_id: state.projectId,
-        name: state.slides[0]?.title || '예약 포스트',
+        name: state.slides[0]?.title || '검수 포스트',
         slides_json: JSON.parse(JSON.stringify(state.slides)),
       });
       presetId = saved.id;
@@ -2009,9 +2009,9 @@ function renderFullNewsPanel(status) {
   const header = `
     <div class="news-view-header">
       <div>
-        <span class="news-view-eyebrow">${(_newsCh.name || 'NEWS').toUpperCase()}</span>
-        <h2 class="news-view-title">최신 뉴스</h2>
-        <p class="news-view-sub">헤드라인을 클릭하면 AI 포스트 생성으로 바로 연결됩니다</p>
+        <span class="news-view-eyebrow">${(_newsCh.name || 'MODEL OUTPUT').toUpperCase()}</span>
+        <h2 class="news-view-title">모델 아웃풋 소스 베이스</h2>
+        <p class="news-view-sub">소스 헤드라인을 클릭하면 AI 포스트 생성으로 바로 연결됩니다</p>
       </div>
       <div class="news-view-actions">
         <button class="news-refresh-btn" id="newsRefreshBtn">새로고침</button>
@@ -2022,7 +2022,7 @@ function renderFullNewsPanel(status) {
   if (status === 'loading') {
     view.innerHTML = header + `<div class="news-view-empty">불러오는 중...</div>`;
   } else if (status === 'error' || !newsCache.items.length) {
-    view.innerHTML = header + `<div class="news-view-empty">뉴스를 불러올 수 없습니다</div>`;
+    view.innerHTML = header + `<div class="news-view-empty">소스를 불러올 수 없습니다</div>`;
   } else {
     const ALL_SOURCES = ['news', 'newsapi', 'blog', 'youtube'];
     const counts = Object.fromEntries(
@@ -2064,7 +2064,7 @@ function renderFullNewsPanel(status) {
             <div class="news-card-date">${escHtml(item.date)}</div>
             <button class="news-card-btn">이 소재로 포스트 생성 →</button>
           </div>`;
-        }).join('') : `<div style="grid-column:1/-1;padding:40px 0;font-size:13px;color:#333;text-align:center;">해당 소스의 최근 뉴스가 없습니다</div>`}
+        }).join('') : `<div style="grid-column:1/-1;padding:40px 0;font-size:13px;color:#333;text-align:center;">해당 소스의 최근 데이터가 없습니다</div>`}
       </div>
       ${totalPages > 1 ? `
       <div class="news-pagination">

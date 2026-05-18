@@ -32,7 +32,7 @@ function renderDashboard() {
       <div class="dash-header">
         <div class="dash-header-left">
           <span class="dash-title">X MACHINA</span>
-          <span class="dash-meta">예약 ${totalSched}  초안 ${totalDraft}</span>
+          <span class="dash-meta">검수 대기 ${totalSched}  초안 ${totalDraft}</span>
         </div>
         <button class="dash-close-btn" id="dashCloseBtn">편집으로</button>
       </div>
@@ -68,14 +68,14 @@ function renderChannelColumn(ch) {
           <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
         </div>
         <div class="dash-col-counts">
-          <span class="dash-count ${sched > 0 ? 'dash-count--sched' : ''}">예약 ${sched}</span>
+          <span class="dash-count ${sched > 0 ? 'dash-count--sched' : ''}">검수 대기 ${sched}</span>
           <span class="dash-count">초안 ${draft}</span>
           <span class="dash-count dash-count--pub">발행 ${published}</span>
         </div>
       </div>
       <div class="dash-col-body">
         ${chPosts.length === 0
-          ? '<div class="dash-col-empty">예약된 포스트 없음</div>'
+          ? '<div class="dash-col-empty">검수 대기 중인 포스트 없음</div>'
           : chPosts.map(p => renderPostCard(p)).join('')}
       </div>
       <div class="dash-col-footer">
@@ -90,7 +90,7 @@ function renderPostCard(post) {
   const isSched = post.status === 'scheduled';
   const dateStr = isSched && post.scheduled_at
     ? new Date(post.scheduled_at).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : '미예약';
+    : '대기 중';
   const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || './gymspire-logo.png';
   const slideCount = post.slide_images ? post.slide_images.length : 0;
@@ -117,7 +117,6 @@ function renderPostCard(post) {
         <button class="dash-post-btn" data-post-id="${post.id}" data-channel-id="${post.channel_id}">편집</button>
         <button class="dash-post-btn dash-post-btn--preview" data-post-id="${post.id}">미리보기</button>
         <button class="dash-post-btn dash-post-btn--download" data-post-id="${post.id}" title="슬라이드 다운로드 및 캡션 복사">다운로드</button>
-        ${isSched ? `<button class="dash-post-btn dash-post-btn--publish" data-post-id="${post.id}">지금 발행</button>` : ''}
       </div>
     </div>
   `;
@@ -126,12 +125,8 @@ function renderPostCard(post) {
 function bindDashboardEvents() {
   document.getElementById('dashCloseBtn').addEventListener('click', hideDashboard);
 
-  document.querySelectorAll('.dash-post-btn:not(.dash-post-btn--publish):not(.dash-post-btn--preview):not(.dash-post-btn--download)').forEach(btn => {
+  document.querySelectorAll('.dash-post-btn:not(.dash-post-btn--preview):not(.dash-post-btn--download)').forEach(btn => {
     btn.addEventListener('click', () => openPostInEditor(btn.dataset.postId, btn.dataset.channelId));
-  });
-
-  document.querySelectorAll('.dash-post-btn--publish').forEach(btn => {
-    btn.addEventListener('click', () => publishPost(btn.dataset.postId, btn));
   });
 
   document.querySelectorAll('.dash-post-btn--preview, .dash-post-thumb-wrap').forEach(btn => {
