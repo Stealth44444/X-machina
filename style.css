@@ -157,7 +157,7 @@ body {
 }
 
 .sidebar-section {
-  padding: 20px 0;
+  padding: 20px 0 12px;
   border-bottom: 1px solid #1a1a1a;
 }
 
@@ -1987,7 +1987,6 @@ body {
 }
 .dash-header-left { display: flex; align-items: center; gap: 16px; }
 .dash-title { font-size: 12px; font-weight: 900; color: #e8e8e8; letter-spacing: 2.5px; }
-.dash-meta { font-size: 11px; color: #444; }
 .dash-close-btn {
   padding: 6px 14px; background: transparent; border: 1px solid #222; border-radius: 4px;
   color: #888; font-size: 11px; cursor: pointer; white-space: nowrap; letter-spacing: 0.5px;
@@ -2020,13 +2019,6 @@ body {
   color: #555; font-size: 10px; cursor: pointer; letter-spacing: 0.3px;
 }
 .dash-col-settings:hover { border-color: #444; color: #aaa; }
-.dash-col-counts { display: flex; gap: 8px; }
-.dash-count {
-  font-size: 10px; color: #444; padding: 2px 6px;
-  background: #0f0f0f; border-radius: 3px;
-}
-.dash-count--sched { color: #e8e8e8; background: #1a1a1a; }
-.dash-count--pub { color: #555; }
 
 /* Post cards */
 .dash-col-body {

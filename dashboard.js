@@ -23,16 +23,12 @@ function hideDashboard() {
 
 function renderDashboard() {
   const screen = document.getElementById('dashboardScreen');
-  const pending = dashState.posts.filter(p => p.status !== 'published');
-  const totalSched = pending.filter(p => p.status === 'scheduled').length;
-  const totalDraft = pending.filter(p => p.status === 'draft').length;
 
   screen.innerHTML = `
     <div class="dash-inner">
       <div class="dash-header">
         <div class="dash-header-left">
           <span class="dash-title">X MACHINA</span>
-          <span class="dash-meta">검수 대기 ${totalSched}  초안 ${totalDraft}</span>
         </div>
         <button class="dash-close-btn" id="dashCloseBtn">편집으로</button>
       </div>
@@ -56,21 +52,12 @@ function renderChannelColumn(ch) {
       return new Date(b.created_at) - new Date(a.created_at);
     });
 
-  const sched = chPosts.filter(p => p.status === 'scheduled').length;
-  const draft = chPosts.filter(p => p.status === 'draft').length;
-  const published = dashState.posts.filter(p => p.channel_id === ch.id && p.status === 'published').length;
-
   return `
     <div class="dash-col" data-channel-id="${ch.id}">
       <div class="dash-col-header" style="border-top-color:${ch.color}">
         <div class="dash-col-title-row">
           <span class="dash-col-name">${ch.name}</span>
           <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
-        </div>
-        <div class="dash-col-counts">
-          <span class="dash-count ${sched > 0 ? 'dash-count--sched' : ''}">검수 대기 ${sched}</span>
-          <span class="dash-count">초안 ${draft}</span>
-          <span class="dash-count dash-count--pub">발행 ${published}</span>
         </div>
       </div>
       <div class="dash-col-body">
