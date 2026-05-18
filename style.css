@@ -1372,6 +1372,18 @@ body {
   color: #ffffff;
 }
 
+.preset-item--new {
+  color: #333;
+  border-bottom: 1px solid #111;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.preset-item--new:hover {
+  color: #888;
+  background: #111;
+}
+
 .preset-delete {
   background: none;
   border: none;

@@ -385,22 +385,11 @@ async function initApp() {
 
   const hasChannel = await initChannelSystem();
   if (hasChannel) {
-    if (!loadAutoSave()) {
-      loadTemplate('cardnews');
-    } else {
-      renderGallery();
-      renderFilmstrip();
-      renderEditor();
-      renderCanvas();
-      history.stack = [snapshotState()];
-      history.index = 0;
-      updateHistoryBtns();
-    }
     await renderPresets();
   } else {
     loadTemplate('cardnews');
-    showProjectScreen();
   }
+  showProjectScreen();
 }
 
 function initRatioBtns() {
@@ -1895,9 +1884,9 @@ async function loadPreset(id) {
   const presets = await getPresets();
   const preset = presets.find(p => p.id === id);
   if (!preset) return;
-  state.templateId = preset.templateId;
+  state.templateId = preset.templateId || 'cardnews';
   state.slideIndex = 0;
-  state.slides = preset.slides;
+  state.slides = preset.slides_json || preset.slides || [{}];
   state.outroImage = preset.outroImage || '';
   state.outroPosX = preset.outroPosX ?? 50;
   state.outroPosY = preset.outroPosY ?? 50;
@@ -1918,17 +1907,27 @@ async function deletePreset(id) {
 async function renderPresets() {
   const list = document.getElementById('presetList');
   const presets = await getPresets();
+
+  const newCanvasItem = `<div class="preset-item preset-item--new" id="newCanvasBtn">새 캔버스</div>`;
+
   if (!presets.length) {
-    list.innerHTML = `<div style="padding:8px 20px 12px;font-size:11px;color:#2a2a2a;">저장된 항목 없음</div>`;
-    return;
+    list.innerHTML = newCanvasItem + `<div style="padding:8px 20px 12px;font-size:11px;color:#2a2a2a;">저장된 항목 없음</div>`;
+  } else {
+    list.innerHTML = newCanvasItem + presets.map(p => `
+      <div class="preset-item ${p.id === state.activePresetId ? 'active' : ''}" data-id="${p.id}">
+        <span class="preset-name">${escHtml(p.name)}</span>
+        <button class="preset-delete" data-id="${p.id}">×</button>
+      </div>
+    `).join('');
   }
-  list.innerHTML = presets.map(p => `
-    <div class="preset-item ${p.id === state.activePresetId ? 'active' : ''}" data-id="${p.id}">
-      <span class="preset-name">${escHtml(p.name)}</span>
-      <button class="preset-delete" data-id="${p.id}">×</button>
-    </div>
-  `).join('');
-  list.querySelectorAll('.preset-item').forEach(item => {
+
+  document.getElementById('newCanvasBtn').addEventListener('click', () => {
+    state.activePresetId = null;
+    loadTemplate('cardnews');
+    renderPresets();
+  });
+
+  list.querySelectorAll('.preset-item[data-id]').forEach(item => {
     item.addEventListener('click', e => {
       if (e.target.classList.contains('preset-delete')) return;
       item.classList.add('flash');

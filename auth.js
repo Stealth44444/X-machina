@@ -44,4 +44,5 @@ function showAuthScreen() {
 
 function hideAuthScreen() {
   document.getElementById('authScreen').style.display = 'none';
+  document.querySelector('.app').style.display = '';
 }
