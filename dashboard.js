@@ -39,7 +39,7 @@ function renderDashboard() {
   screen.innerHTML = `
     <div class="dash-inner">
       <div class="dash-header">
-        <span class="dash-title">STUDIO</span>
+        <span class="dash-title">X MACHINA</span>
         <div class="dash-channel-tabs">
           <button class="dash-ch-tab ${!dashState.selectedChannelId ? 'active' : ''}" data-id="">전체</button>
           ${dashState.channels.map(c => `
@@ -123,7 +123,7 @@ function renderPostCard(post) {
     <div class="dash-card" data-id="${post.id}">
       ${thumb}
       <div class="dash-card-body">
-        <div class="dash-card-ch" style="color:${ch?.color || '#2B9BF4'}">${ch?.emoji || ''} ${ch?.name || ''}</div>
+        <div class="dash-card-ch" style="color:${ch?.color || '#ffffff'}">${ch?.emoji || ''} ${ch?.name || ''}</div>
         <div class="dash-card-name">${titleText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
         <div class="dash-card-date">${date}</div>
       </div>
@@ -164,7 +164,7 @@ function renderCalendar() {
         });
         const dots = dayPosts.map(p => {
           const ch = dashState.channels.find(c => c.id === p.channel_id);
-          return `<span class="dash-cal-dot" style="background:${ch?.color || '#2B9BF4'}" title="${ch?.name || ''}"></span>`;
+          return `<span class="dash-cal-dot" style="background:${ch?.color || '#ffffff'}" title="${ch?.name || ''}"></span>`;
         }).join('');
         return `
           <button class="dash-cal-day ${isToday ? 'today' : ''} ${isSel ? 'selected' : ''}"

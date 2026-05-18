@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>GYMSPIRE Template Tool</title>
+  <title>X Machina</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="style.css">
@@ -14,15 +14,14 @@
     <aside class="sidebar">
       <div class="sidebar-brand">
         <span class="brand-name" id="brandName">GYMSPIRE</span>
-        <button class="project-switch-btn" id="dashboardBtn" title="대시보드">⊟</button>
-        <button class="project-switch-btn" id="projectSwitchBtn" title="채널 변경">⊞</button>
-        <button class="project-switch-btn" id="logoutBtn" title="로그아웃" style="font-size:10px;opacity:0.5">↗</button>
+        <div class="sidebar-brand-actions">
+          <button class="sidebar-action-btn" id="dashboardBtn">대시보드</button>
+          <button class="sidebar-action-btn" id="projectSwitchBtn">채널</button>
+          <button class="sidebar-action-btn" id="logoutBtn">로그아웃</button>
+        </div>
       </div>
       <div class="sidebar-section sidebar-nav">
-        <button class="sidebar-news-btn" id="newsModeBtn">
-          <span>GYMSHARK NEWS</span>
-          <span class="sidebar-news-arrow">→</span>
-        </button>
+        <button class="sidebar-news-btn" id="newsModeBtn">GYMSHARK NEWS</button>
       </div>
       <div class="sidebar-section">
         <p class="section-label">내 작업</p>
@@ -31,7 +30,7 @@
       <div class="sidebar-section pinterest-section">
         <div class="section-header">
           <p class="section-label">PINTEREST</p>
-          <button class="section-toggle" id="pinterestToggle">−</button>
+          <button class="section-toggle" id="pinterestToggle">접기</button>
         </div>
         <div id="keywordGrid"></div>
       </div>
@@ -58,14 +57,14 @@
       <div id="textStylePanel" style="display:none"></div>
       <div id="fields"></div>
       <div class="history-row">
-        <button class="history-btn" id="undoBtn" disabled>↩ 이전</button>
-        <button class="history-btn" id="redoBtn" disabled>↪ 이후</button>
+        <button class="history-btn" id="undoBtn" disabled>이전</button>
+        <button class="history-btn" id="redoBtn" disabled>이후</button>
       </div>
-      <button class="export-btn ai-gen-btn" id="aiGenBtn">✦ AI 포스트 생성</button>
+      <button class="export-btn ai-gen-btn" id="aiGenBtn">AI 포스트 생성</button>
       <button class="export-btn" id="savePresetBtn">진행상황 저장</button>
-      <button class="export-btn" id="scheduleBtn">📅 발행 예약</button>
-      <button class="export-btn" id="exportAllBtn">↓ 전체 내보내기</button>
-      <button class="export-btn" id="exportBtn" style="margin-top:0;">↓  PNG 내보내기</button>
+      <button class="export-btn" id="scheduleBtn">발행 예약</button>
+      <button class="export-btn" id="exportAllBtn">전체 내보내기</button>
+      <button class="export-btn" id="exportBtn" style="margin-top:0;">PNG 내보내기</button>
     </aside>
   </div>
 
@@ -76,7 +75,7 @@
       <div class="ai-panel-header">
         <div class="ai-panel-header-row">
           <div>
-            <span class="ai-panel-eyebrow">📅 SCHEDULE</span>
+            <span class="ai-panel-eyebrow">SCHEDULE</span>
             <h2 class="ai-panel-title">발행 예약</h2>
           </div>
           <button class="ai-btn ai-btn-ghost" id="scheduleModalClose">닫기</button>
@@ -105,7 +104,7 @@
       <div class="ai-panel-header">
         <div class="ai-panel-header-row">
           <div>
-            <span class="ai-panel-eyebrow">↻ REGENERATE</span>
+            <span class="ai-panel-eyebrow">REGENERATE</span>
             <h2 class="ai-panel-title" id="slideRegenTitle">슬라이드 재생성</h2>
           </div>
           <button class="ai-btn ai-btn-ghost" id="slideRegenClose">닫기</button>
@@ -133,7 +132,7 @@
         <div class="ai-panel-header">
           <div class="ai-panel-header-row">
             <div>
-              <span class="ai-panel-eyebrow">✦ AI GENERATE</span>
+              <span class="ai-panel-eyebrow">AI GENERATE</span>
               <h2 class="ai-panel-title">포스트 생성</h2>
             </div>
             <button class="ai-btn ai-btn-ghost" id="aiClose">닫기</button>

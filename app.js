@@ -298,7 +298,7 @@ async function initApp() {
     const btn = document.getElementById('pinterestToggle');
     const hidden = grid.style.display === 'none';
     grid.style.display = hidden ? '' : 'none';
-    btn.textContent = hidden ? '−' : '+';
+    btn.textContent = hidden ? '접기' : '펼치기';
   });
   initRatioBtns();
   initSlideRegen();
@@ -2148,7 +2148,7 @@ async function exportAllPng() {
     canvas.style.transform = prevTransform;
     renderCanvas();
     btn.disabled = false;
-    btn.textContent = '↓ 전체 내보내기';
+    btn.textContent = '전체 내보내기';
   }
 }
 
@@ -2185,7 +2185,7 @@ function exportPng() {
     canvas.style.top = '';
     canvas.style.transform = prevTransform;
     btn.disabled = false;
-    btn.textContent = '↓  PNG 내보내기';
+    btn.textContent = 'PNG 내보내기';
   });
 }
 

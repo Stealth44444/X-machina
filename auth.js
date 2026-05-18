@@ -3,8 +3,8 @@ function renderAuthScreen() {
   el.innerHTML = `
     <div class="auth-wrap">
       <div class="auth-card">
-        <div class="auth-logo">GYMSPIRE STUDIO</div>
-        <p class="auth-sub">콘텐츠 제작 플랫폼</p>
+        <div class="auth-logo">X MACHINA</div>
+        <p class="auth-sub">멀티채널 콘텐츠 자동화</p>
         <input class="auth-input" id="authEmail" type="email" placeholder="이메일" autocomplete="email">
         <input class="auth-input" id="authPassword" type="password" placeholder="비밀번호" autocomplete="current-password">
         <button class="auth-btn" id="authLoginBtn">로그인</button>
