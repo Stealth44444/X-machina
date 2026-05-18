@@ -1919,11 +1919,11 @@ async function renderPresets() {
       if (e.target.classList.contains('preset-delete')) return;
       item.classList.add('flash');
       item.addEventListener('animationend', () => item.classList.remove('flash'), { once: true });
-      loadPreset(parseInt(item.dataset.id));
+      loadPreset(item.dataset.id);
     });
   });
   list.querySelectorAll('.preset-delete').forEach(btn => {
-    btn.addEventListener('click', () => deletePreset(parseInt(btn.dataset.id)));
+    btn.addEventListener('click', () => deletePreset(btn.dataset.id));
   });
 }
 
