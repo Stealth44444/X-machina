@@ -152,7 +152,7 @@ function bindDashboardEvents() {
           await dbUpdatePostCaption(inp.dataset.postId, inp.value);
           if (hint) {
             hint.textContent = '✓ 저장됨';
-            hint.style.color = '#2B9BF4';
+            hint.style.color = '#ffffff';
             setTimeout(() => { hint.style.display = 'none'; }, 2000);
           }
         } catch (e) {
@@ -172,7 +172,7 @@ function bindDashboardEvents() {
         if (hint) {
           hint.textContent = '✓ 저장됨';
           hint.style.display = 'inline';
-          hint.style.color = '#2B9BF4';
+          hint.style.color = '#ffffff';
           setTimeout(() => { hint.style.display = 'none'; }, 2000);
         }
       } catch (e) {
