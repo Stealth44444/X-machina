@@ -86,18 +86,7 @@ window.contentSlide = function(s, idx, total) {
 
 function buildBgHtml(s) {
   const img = s.bgImage;
-  if (!img) return `
-    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:48px;pointer-events:none;">
-      <svg width="180" height="180" viewBox="0 0 24 24" fill="none" stroke="#484848" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <circle cx="8.5" cy="8.5" r="1.5"/>
-        <path d="M21 15l-5-5L5 21"/>
-      </svg>
-      <div style="text-align:center;">
-        <div style="font-size:52px;font-weight:400;color:#555;letter-spacing:-0.5px;margin-bottom:24px;">배경 이미지를 추가하세요</div>
-        <div style="font-size:28px;font-weight:400;color:#666;letter-spacing:1px;">우측 패널 → 이미지 업로드</div>
-      </div>
-    </div>`;
+  if (!img) return `<div style="position:absolute;inset:0;background:#0a0a0a;"></div>`;
   const pos = `${s.bgPosX ?? 50}% ${s.bgPosY ?? 50}%`;
   const dim = s.bgDim ?? 0;
   return `<div class="bg-layer" style="position:absolute;inset:0;background-image:url(${img});background-size:cover;background-position:${pos};"></div>${dim > 0 ? `<div class="bg-dim-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,${(dim / 100).toFixed(2)});pointer-events:none;"></div>` : ''}`;
@@ -393,13 +382,6 @@ async function initApp() {
   document.getElementById('newsModeBtn').addEventListener('click', () => {
     setMode(state.appMode === 'news' ? 'edit' : 'news');
   });
-  document.getElementById('moodboardToggle').addEventListener('click', () => {
-    const panel = document.getElementById('moodboardPanel');
-    const btn = document.getElementById('moodboardToggle');
-    const hidden = panel.style.display === 'none';
-    panel.style.display = hidden ? '' : 'none';
-    btn.textContent = hidden ? '접기' : '펼치기';
-  });
   initRatioBtns();
   initSlideRegen();
   document.addEventListener('pointerdown', e => {
@@ -612,17 +594,6 @@ function renderFilmstrip() {
   const filmstrip = document.getElementById('filmstrip');
   const maxSlides = template.maxSlides || template.slides || 10;
 
-  const outroIndex = state.slides.length;
-  const outroS = { bgImage: state.outroImage, bgPosX: state.outroPosX, bgPosY: state.outroPosY };
-  const outroItem = `
-    <div class="filmstrip-item ${state.slideIndex === outroIndex ? 'active' : ''}" data-index="${outroIndex}">
-      <div class="filmstrip-preview-wrap">
-        <div class="filmstrip-preview">${buildBgHtml(outroS)}${window.outroSlide()}</div>
-      </div>
-      <span class="filmstrip-num">END</span>
-    </div>
-  `;
-
   filmstrip.innerHTML = state.slides.map((slideState, i) => {
     return `
       <div class="filmstrip-item ${i === state.slideIndex ? 'active' : ''}" data-index="${i}" draggable="true">
@@ -639,8 +610,7 @@ function renderFilmstrip() {
       </div>
     `;
   }).join('')
-  + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '')
-  + outroItem;
+  + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '');
 
   state.slides.forEach((slideState, i) => {
     const previews = filmstrip.querySelectorAll('.filmstrip-preview');
@@ -725,12 +695,7 @@ function renderCanvas() {
   const template = getTemplate(state.templateId);
   const canvas = document.getElementById('canvas');
   canvas.style.backgroundImage = 'none';
-  if (state.slideIndex === state.slides.length) {
-    const outroS = { bgImage: state.outroImage, bgPosX: state.outroPosX, bgPosY: state.outroPosY };
-    canvas.innerHTML = buildBgHtml(outroS) + window.outroSlide();
-    return;
-  }
-  const slideState = state.slides[state.slideIndex] || {};
+  const slideState = state.slides[Math.min(state.slideIndex, state.slides.length - 1)] || {};
   canvas.innerHTML = buildBgHtml(slideState) + template.render(slideState, state.slideIndex, state.slides.length);
   applyDragOffsets(canvas, slideState);
   applyTextStyles(canvas, slideState, true);
@@ -764,56 +729,6 @@ function renderEditor() {
   const template = getTemplate(state.templateId);
   const fieldsEl = document.getElementById('fields');
   const slideState = state.slides[state.slideIndex] || {};
-
-  if (state.slideIndex === state.slides.length) {
-    const opx = state.outroPosX ?? 50, opy = state.outroPosY ?? 50;
-    const outroPicker = state.outroImage ? `<div class="pos-picker"><div class="pos-handle" style="left:${opx}%;top:${opy}%"></div></div>` : '';
-    fieldsEl.innerHTML = `
-      <div style="padding:16px 0 16px;font-size:10px;font-weight:700;color:#444;letter-spacing:1.5px;text-transform:uppercase;">고정 아웃트로</div>
-      <div class="field-group">
-        <label class="field-label">배경 이미지</label>
-        <button class="field-image-btn ${state.outroImage ? 'has-image' : ''}" id="outroImageBtn">
-          ${state.outroImage ? '✓ 이미지 선택됨' : '+ 이미지 업로드'}
-        </button>
-        ${outroPicker}
-      </div>
-    `;
-    document.getElementById('outroImageBtn').addEventListener('click', () => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async ev => {
-          try {
-            state.outroImage = await uploadBgImage(ev.target.result, state.projectId);
-          } catch {
-            state.outroImage = await compressImage(ev.target.result);
-          }
-          renderCanvas();
-          renderFilmstrip();
-          renderEditor();
-        };
-        reader.readAsDataURL(file);
-      };
-      input.click();
-    });
-    const outroPicEl = fieldsEl.querySelector('.pos-picker');
-    if (outroPicEl) {
-      attachPosPicker(outroPicEl,
-        (x, y) => {
-          state.outroPosX = x;
-          state.outroPosY = y;
-          const bgL = document.querySelector('#canvas .bg-layer');
-          if (bgL) bgL.style.backgroundPosition = `${x}% ${y}%`;
-        },
-        () => renderFilmstrip()
-      );
-    }
-    return;
-  }
 
   const visibleKeys = template.fieldsForSlide ? template.fieldsForSlide(state.slideIndex) : null;
   const visibleFields = visibleKeys ? template.fields.filter(f => visibleKeys.includes(f.key)) : template.fields;
@@ -2247,7 +2162,7 @@ async function exportAllPng() {
   const template = getTemplate(state.templateId);
   const btn = document.getElementById('exportAllBtn');
   const canvas = document.getElementById('canvas');
-  const totalSlides = state.slides.length + 1;
+  const totalSlides = state.slides.length;
 
   btn.disabled = true;
   const prevTransform = canvas.style.transform;
@@ -2261,14 +2176,9 @@ async function exportAllPng() {
   try {
     for (let i = 0; i < totalSlides; i++) {
       btn.textContent = `내보내는 중 ${i + 1}/${totalSlides}`;
-      if (i === state.slides.length) {
-        canvas.style.backgroundImage = 'none';
-        canvas.innerHTML = buildBgHtml({ bgImage: state.outroImage, bgPosX: state.outroPosX, bgPosY: state.outroPosY }) + window.outroSlide();
-      } else {
-        const s = state.slides[i] || {};
+      const s = state.slides[i] || {};
         canvas.style.backgroundImage = 'none';
         canvas.innerHTML = buildBgHtml(s) + template.render(s, i, state.slides.length);
-      }
       const rendered = await html2canvas(canvas, { scale: 1, width: 1080, height: state.canvasH || 1350, useCORS: true, allowTaint: true, backgroundColor: '#000000' });
       const link = document.createElement('a');
       link.download = `gymspire-${state.templateId}-${ts}-${String(i + 1).padStart(2, '0')}.png`;
