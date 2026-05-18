@@ -2022,16 +2022,6 @@ function renderProjectSettings() {
               <input class="ch-input" id="projColorHex" type="text" value="${escHtml(ch.color || '#ffffff')}">
             </div>
           </div>
-          <div class="ch-divider"><span class="ch-divider-label">Instagram</span></div>
-          <div class="ch-field">
-            <label class="ch-label">사용자 ID</label>
-            <input class="ch-input" id="projIgUserId" type="text" value="${escHtml(ch.ig_user_id || '')}" placeholder="17841400000000000">
-          </div>
-          <div class="ch-field">
-            <label class="ch-label">액세스 토큰</label>
-            <input class="ch-input" id="projIgToken" type="password" value="${escHtml(ch.ig_access_token || '')}" placeholder="EAAxxxxx...">
-            <button class="ch-token-toggle" id="projTokenToggle">표시</button>
-          </div>
         </div>
         <div class="proj-left-footer">
           <span class="proj-save-status" id="projSaveStatus"></span>
@@ -2048,12 +2038,6 @@ function renderProjectSettings() {
   colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
   colorHex.addEventListener('input', () => {
     if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
-  });
-  document.getElementById('projTokenToggle').addEventListener('click', e => {
-    const inp = document.getElementById('projIgToken');
-    const showing = inp.type === 'text';
-    inp.type = showing ? 'password' : 'text';
-    e.target.textContent = showing ? '표시' : '숨기기';
   });
   document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
 
@@ -2079,8 +2063,6 @@ async function saveProjectSettings() {
     color: document.getElementById('projColorHex').value.trim() || ch.color,
     news_keywords: keywords,
     ai_system_prompt: document.getElementById('projSystemPrompt').value.trim() || null,
-    ig_user_id: document.getElementById('projIgUserId').value.trim() || null,
-    ig_access_token: document.getElementById('projIgToken').value.trim() || null,
   };
   try {
     await dbUpsertChannel(updates);

@@ -191,26 +191,6 @@ async function openPostInEditor(postId, channelId) {
   hideDashboard();
 }
 
-async function publishPost(postId, btn) {
-  if (!confirm('지금 바로 발행하시겠습니까?')) return;
-  btn.disabled = true;
-  btn.textContent = '발행 중...';
-  try {
-    const res = await fetch('/api/publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ post_id: postId }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || '발행 실패');
-    dashState.posts = await dbGetAllPosts();
-    renderDashboard();
-  } catch (e) {
-    alert('발행 실패: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '지금 발행';
-  }
-}
 
 function openLightbox(postId) {
   const post = dashState.posts.find(p => p.id === postId);
@@ -331,22 +311,6 @@ function openChannelSettings(channelId) {
           </div>
         </div>
 
-        <div class="ch-divider">
-          <span class="ch-divider-label">Instagram</span>
-        </div>
-
-        <div class="ch-field">
-          <label class="ch-label">Instagram 사용자 ID</label>
-          <p class="ch-hint">Graph API Explorer → id 필드. 예: 17841400000000000</p>
-          <input class="ch-input" id="chIgUserId" type="text" value="${escSafe(ch.ig_user_id || '')}" placeholder="17841400000000000">
-        </div>
-
-        <div class="ch-field">
-          <label class="ch-label">액세스 토큰</label>
-          <p class="ch-hint">Long-lived User Access Token (60일, 자동 갱신됨)</p>
-          <input class="ch-input" id="chIgToken" type="password" value="${escSafe(ch.ig_access_token || '')}" placeholder="EAAxxxxx...">
-          <button class="ch-token-toggle" id="chTokenToggle">표시</button>
-        </div>
       </div>
 
       <div class="ch-settings-footer">
@@ -363,13 +327,6 @@ function openChannelSettings(channelId) {
   colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
   colorHex.addEventListener('input', () => {
     if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
-  });
-
-  document.getElementById('chTokenToggle').addEventListener('click', (e) => {
-    const inp = document.getElementById('chIgToken');
-    const showing = inp.type === 'text';
-    inp.type = showing ? 'password' : 'text';
-    e.target.textContent = showing ? '표시' : '숨기기';
   });
 
   document.getElementById('chSettingsClose').addEventListener('click', closeChannelSettings);
@@ -402,8 +359,6 @@ async function saveChannelSettings() {
     color: document.getElementById('chColorHex').value.trim() || ch.color,
     news_keywords: keywords,
     ai_system_prompt: document.getElementById('chSystemPrompt').value.trim() || null,
-    ig_user_id: document.getElementById('chIgUserId').value.trim() || null,
-    ig_access_token: document.getElementById('chIgToken').value.trim() || null,
   };
 
   try {
