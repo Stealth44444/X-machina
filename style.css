@@ -1320,20 +1320,16 @@ body {
 
 .news-card-source {
   display: inline-block;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 2px 8px;
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid #1e1e1e;
   border-radius: 3px;
-  background: #161616;
-  color: #555;
+  color: #3a3a3a;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
-
-.news-card-source--news    { background: #0d1a2a; color: #4a8fd4; }
-.news-card-source--newsapi { background: #0f1020; color: #7b6ff0; }
-.news-card-source--blog    { background: #0a1f10; color: #4caf70; }
-.news-card-source--youtube { background: #1a0a0a; color: #e05555; }
 
 /* ── Unified active state for all panel toggle buttons ───────────────────── */
 .ai-tone-btn.active,
