@@ -173,6 +173,88 @@ async function fetchBingNews(query) {
   return items;
 }
 
+// ── Generic RSS / Atom parser ─────────────────────────────────────────────
+async function fetchRssItems(url, label) {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const cut = cutoff();
+    const items = [];
+
+    // Try RSS 2.0 <item> blocks first
+    const rssMatches = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    // Fall back to Atom <entry> blocks
+    const atomMatches = rssMatches.length === 0
+      ? [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)]
+      : [];
+    const blocks = rssMatches.length > 0
+      ? rssMatches.map(m => ({ block: m[1], format: 'rss' }))
+      : atomMatches.map(m => ({ block: m[1], format: 'atom' }));
+
+    for (const { block, format } of blocks) {
+      let title = '';
+      let ms = 0;
+      let link = '';
+
+      if (format === 'rss') {
+        title = (
+          block.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ||
+          block.match(/<title>([^<]*)<\/title>/)?.[1] || ''
+        ).replace(/\s*[-|]\s*[^-|]{1,50}$/, '').trim();
+        ms = new Date(block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || 0).getTime();
+        link = block.match(/<link>(https?:\/\/[^<\s]+)/)?.[1] ||
+               block.match(/<guid[^>]*>(https?:\/\/[^<\s]+)/)?.[1] || '';
+      } else {
+        title = (
+          block.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ||
+          block.match(/<title[^>]*>([^<]*)<\/title>/)?.[1] || ''
+        ).replace(/\s*[-|]\s*[^-|]{1,50}$/, '').trim();
+        const dateStr = block.match(/<updated>(.*?)<\/updated>/)?.[1] ||
+                        block.match(/<published>(.*?)<\/published>/)?.[1] || '';
+        ms = new Date(dateStr).getTime();
+        link = block.match(/<link[^>]+href="(https?:\/\/[^"]+)"/)?.[1] ||
+               block.match(/<link>(https?:\/\/[^<\s]+)<\/link>/)?.[1] || '';
+      }
+
+      if (!title || !ms || ms < cut) continue;
+      items.push({ title, date: msToDate(ms), source: label, url: link, ms });
+      if (items.length >= 20) break;
+    }
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+// ── Supabase channel rss_feeds lookup ────────────────────────────────────
+async function fetchChannelFeeds(channelId) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey || !channelId) return [];
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/channels?id=eq.${encodeURIComponent(channelId)}&select=rss_feeds`,
+      {
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          Accept: 'application/json',
+        },
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows[0]?.rss_feeds) ? rows[0].rss_feeds : [];
+  } catch {
+    return [];
+  }
+}
+
 // ── NewsAPI.org ───────────────────────────────────────────────────────────
 async function fetchNewsApi(apiKey, keywords) {
   const q = encodeURIComponent(keywords.map(k => `"${k}"`).join(' OR '));
@@ -197,11 +279,59 @@ export default async function handler(req, res) {
   try {
     const ytKey      = process.env.YOUTUBE_API_KEY;
     const newsApiKey = process.env.NEWSAPI_KEY;
+    const channelId  = req.query.channel_id || null;
 
-    // Accept comma-separated keywords from client; fall back to 'gymshark' for legacy
-    const rawKeywords = (req.query.keywords || 'gymshark')
+    const rawKeywords = (req.query.keywords || '')
       .split(',').map(k => k.trim()).filter(Boolean);
-    const primaryQuery = rawKeywords.join(' OR ');
+    const kwLower = rawKeywords.map(k => k.toLowerCase());
+
+    // ── Curated mode: channel has rss_feeds ──────────────────────────────
+    const feeds = channelId ? await fetchChannelFeeds(channelId) : [];
+
+    if (feeds.length > 0) {
+      const isDcinside = feed => feed.url.includes('gall.dcinside.com');
+
+      const results = await Promise.allSettled(
+        feeds.map(feed => fetchRssItems(feed.url, feed.label))
+      );
+
+      const sourceResults = {};
+      feeds.forEach((feed, i) => {
+        const items = results[i].status === 'fulfilled' ? results[i].value : [];
+        // DC Inside: only keep items with at least one keyword match
+        sourceResults[feed.label] = isDcinside(feed) && kwLower.length > 0
+          ? items.filter(item => kwLower.some(kw => item.title.toLowerCase().includes(kw)))
+          : items;
+      });
+
+      const sourceStatus = Object.fromEntries(
+        Object.entries(sourceResults).map(([k, v]) => [k, { ok: v.length > 0, count: v.length }])
+      );
+
+      const seen = new Set();
+      const deduped = Object.values(sourceResults).flat()
+        .sort((a, b) => b.ms - a.ms)
+        .filter(item => {
+          const key = item.title.toLowerCase().slice(0, 40);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+      const scored = kwLower.length > 0
+        ? deduped.map(item => {
+            const t = item.title.toLowerCase();
+            const score = kwLower.reduce((acc, kw) => acc + (t.includes(kw) ? 1 : 0), 0);
+            return { ...item, _score: score };
+          }).sort((a, b) => b._score !== a._score ? b._score - a._score : b.ms - a.ms)
+        : deduped.map(item => ({ ...item, _score: 0 }));
+
+      const items = scored.map(({ ms, _score, ...rest }) => rest);
+      return res.status(200).json({ items, sources: sourceStatus });
+    }
+
+    // ── Fallback mode: no rss_feeds, use Google/Bing/NewsAPI ─────────────
+    const primaryQuery = rawKeywords.length > 0 ? rawKeywords.join(' OR ') : 'news';
     const isGymshark = rawKeywords.some(k => /gymshark|gymspire/i.test(k));
 
     const [gnews, bing, newsapi, blog, youtube] = await Promise.allSettled([
@@ -217,7 +347,7 @@ export default async function handler(req, res) {
     const sourceResults = {
       news:    [...gnewsItems, ...bingItems],
       newsapi: newsapi.status === 'fulfilled' ? newsapi.value : [],
-      blog:    blog.status === 'fulfilled'    ? blog.value    : [],
+      blog:    blog.status   === 'fulfilled'  ? blog.value    : [],
       youtube: youtube.status === 'fulfilled' ? youtube.value : [],
     };
     const sourceStatus = Object.fromEntries(
@@ -234,19 +364,16 @@ export default async function handler(req, res) {
         return true;
       });
 
-    // Relevance scoring: count keyword appearances in title
-    const kwLower = rawKeywords.map(k => k.toLowerCase());
     const scored = deduped.map(item => {
       const t = item.title.toLowerCase();
       const score = kwLower.reduce((acc, kw) => acc + (t.includes(kw) ? 1 : 0), 0);
       return { ...item, _score: score };
     }).sort((a, b) => b._score !== a._score ? b._score - a._score : b.ms - a.ms);
 
-    // Keep only relevant items if enough exist; otherwise return all
     const relevant = scored.filter(i => i._score > 0);
     const items = (relevant.length >= 5 ? relevant : scored).map(({ ms, _score, ...rest }) => rest);
-
     res.status(200).json({ items, sources: sourceStatus });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
