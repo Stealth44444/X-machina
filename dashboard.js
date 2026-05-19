@@ -233,13 +233,13 @@ function renderCalendarTab() {
     </div>`;
   }
 
-  let detailHtml = '';
+  let detailInner = '<div class="dash-cal-detail-placeholder">날짜를 선택하세요</div>';
   if (dashState.calDay !== null) {
     const selPosts = dayMap.get(dashState.calDay) || [];
     const selLabel = new Date(year, month, dashState.calDay).toLocaleDateString('ko-KR', {
       year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'
     });
-    detailHtml = `<div class="dash-cal-detail">
+    detailInner = `
       <div class="dash-cal-detail-header">${selLabel} — ${selPosts.length}건</div>
       <div class="dash-cal-detail-items">
         ${selPosts.length === 0 ? '<div class="dash-cal-detail-empty">게시물 없음</div>' : selPosts.map(p => {
@@ -258,8 +258,7 @@ function renderCalendarTab() {
               : `<button class="dash-post-btn dash-post-btn--done" data-post-id="${p.id}">업로드 완료</button>`}
           </div>`;
         }).join('')}
-      </div>
-    </div>`;
+      </div>`;
   }
 
   return `<div class="dash-cal-wrap">
@@ -274,7 +273,9 @@ function renderCalendarTab() {
         ${cells}
       </div>
     </div>
-    ${detailHtml}
+    <div class="dash-cal-detail">
+      ${detailInner}
+    </div>
   </div>`;
 }
 
