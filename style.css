@@ -322,6 +322,26 @@ body {
   color: #ffffff;
 }
 
+.field-img-clear {
+  width: 100%;
+  padding: 7px;
+  margin-top: 4px;
+  background: transparent;
+  border: 1px solid #222;
+  border-radius: 4px;
+  color: #555;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.field-img-clear:hover {
+  border-color: #a04040;
+  color: #e05050;
+}
+
 .field-apply-all-btn {
   width: 100%;
   padding: 7px;
