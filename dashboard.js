@@ -59,8 +59,8 @@ function renderDashboard() {
           <span class="dash-header-date">${dateLabel}</span>
           <span class="dash-header-sched${todayScheduled.length === 0 ? ' is-empty' : ''}">
             ${todayScheduled.length > 0
-              ? `<span class="mac-dot mac-dot--scheduled"></span><span>${todayScheduled.length}건 오늘 예약</span>`
-              : '오늘 예약 없음'}
+              ? `<span class="mac-dot mac-dot--scheduled"></span><span>오늘 ${todayScheduled.length}건</span>`
+              : '오늘 업로드 없음'}
           </span>
         </div>
         <button class="dash-close-btn" id="dashCloseBtn">편집으로</button>
@@ -126,16 +126,14 @@ function renderChannelColumn(ch) {
   if (drafts.length > 0) {
     bodyHtml += `
       <div class="dash-date-group">
-        <div class="dash-date-divider is-draft">초안</div>
+        <div class="dash-date-divider is-draft">날짜 미설정</div>
         ${drafts.map(p => renderPostCard(p)).join('')}
       </div>
     `;
   }
 
-  const statsHtml = [
-    scheduled.length > 0 ? `예약 ${scheduled.length}건` : '',
-    drafts.length > 0 ? `초안 ${drafts.length}건` : '',
-  ].filter(Boolean).join(' · ');
+  const total = allPosts.length;
+  const statsHtml = total > 0 ? `총 ${total}건` : '';
 
   return `
     <div class="dash-col" data-channel-id="${ch.id}">
@@ -169,32 +167,22 @@ function renderPostCard(post) {
   const EMPTY_THUMB = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500"><rect width="400" height="500" fill="%23111"/><text x="50%25" y="50%25" fill="%23333" font-size="14" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle">NO IMAGE</text></svg>';
   const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || EMPTY_THUMB;
   const slideCount = post.slide_images ? post.slide_images.length : 0;
-  const safeCaption = escSafe(post.caption || '');
 
   return `
     <div class="dash-post-card">
       <div class="dash-post-top">
         <div class="dash-post-status-row">
           <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
-          ${isSched && timeStr
-            ? `<span class="dash-post-time">${timeStr}</span>`
-            : `<span class="dash-post-draft-lbl">초안</span>`}
+          ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
         </div>
         ${isSched
           ? `<button class="dash-cancel-btn" data-post-id="${post.id}">취소</button>`
           : ''}
       </div>
-      <div class="dash-post-thumb-wrap" data-post-id="${post.id}" title="클릭하여 슬라이드 전체 보기">
+      <div class="dash-post-thumb-wrap" data-post-id="${post.id}">
         <img src="${thumbUrl}" alt="" class="dash-post-thumb">
-        <div class="dash-post-thumb-overlay">
-          <span>슬라이드 ${slideCount}장</span>
-        </div>
       </div>
       <div class="dash-post-title">${safeTitle}</div>
-      <div class="dash-post-caption-wrap">
-        <textarea class="dash-post-caption-input" data-post-id="${post.id}" placeholder="캡션 입력..." rows="3">${safeCaption}</textarea>
-        <span class="dash-caption-saved-hint" id="captionHint_${post.id}" style="display:none">✓ 저장됨</span>
-      </div>
       <div class="dash-post-actions">
         <button class="dash-post-btn" data-post-id="${post.id}" data-channel-id="${post.channel_id}">편집</button>
         <button class="dash-post-btn dash-post-btn--preview" data-post-id="${post.id}">미리보기</button>
@@ -233,47 +221,6 @@ function bindDashboardEvents() {
 
   document.querySelectorAll('.dash-post-btn--download').forEach(btn => {
     btn.addEventListener('click', () => downloadPostImages(btn.dataset.postId));
-  });
-
-  document.querySelectorAll('.dash-post-caption-input').forEach(inp => {
-    let timer = null;
-    inp.addEventListener('input', () => {
-      const hint = document.getElementById(`captionHint_${inp.dataset.postId}`);
-      if (hint) {
-        hint.textContent = '저장 중...';
-        hint.style.display = 'inline';
-        hint.style.color = '#888';
-      }
-      clearTimeout(timer);
-      timer = setTimeout(async () => {
-        try {
-          await dbUpdatePostCaption(inp.dataset.postId, inp.value);
-          if (hint) {
-            hint.textContent = '✓ 저장됨';
-            hint.style.color = '#ffffff';
-            setTimeout(() => { hint.style.display = 'none'; }, 2000);
-          }
-        } catch (e) {
-          if (hint) { hint.textContent = '✗ 저장 실패'; hint.style.color = '#ff4444'; }
-        }
-      }, 1000);
-    });
-
-    inp.addEventListener('blur', async () => {
-      clearTimeout(timer);
-      const hint = document.getElementById(`captionHint_${inp.dataset.postId}`);
-      try {
-        await dbUpdatePostCaption(inp.dataset.postId, inp.value);
-        if (hint) {
-          hint.textContent = '✓ 저장됨';
-          hint.style.display = 'inline';
-          hint.style.color = '#ffffff';
-          setTimeout(() => { hint.style.display = 'none'; }, 2000);
-        }
-      } catch (e) {
-        if (hint) { hint.textContent = '✗ 저장 실패'; hint.style.color = '#ff4444'; }
-      }
-    });
   });
 
   document.querySelectorAll('.dash-new-btn').forEach(btn => {
