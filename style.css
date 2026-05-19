@@ -1132,6 +1132,14 @@ body {
   justify-content: flex-end;
 }
 
+#rssSourcesPane {
+  max-height: 40vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #222 transparent;
+  flex-shrink: 0;
+}
+
 .rss-sources-panel {
   padding: 16px 32px 20px;
   border-bottom: 1px solid #111;
