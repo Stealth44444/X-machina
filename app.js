@@ -1624,7 +1624,7 @@ function renderAiOptions(modalOptions) {
     return `<div class="ai-option-group">
       <span class="ai-option-label">${groupLabels[group]}</span>
       <div class="ai-opt-btns">
-        ${opts.map((o, i) => `<button class="ai-opt-btn${i === 0 ? ' active' : ''}" data-group="${group}" data-id="${o.id}">${o.label}</button>`).join('')}
+        ${opts.map((o, i) => `<button class="ai-opt-btn${i === 0 ? ' active' : ''}" data-group="${group}" data-id="${escHtml(o.id)}">${escHtml(o.label)}</button>`).join('')}
       </div>
     </div>`;
   }).join('');
