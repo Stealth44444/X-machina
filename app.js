@@ -1638,6 +1638,20 @@ function renderAiOptions(modalOptions) {
   });
 }
 
+function getSelectedGuides() {
+  const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
+  if (!ch.modal_options) return null;
+  const container = document.getElementById('aiOptionsContainer');
+  if (!container) return null;
+  const guides = {};
+  ['speech', 'tone', 'target', 'depth', 'angle'].forEach(group => {
+    const activeId = container.querySelector(`.ai-opt-btn.active[data-group="${group}"]`)?.dataset.id;
+    const opt = ch.modal_options[group]?.find(o => o.id === activeId);
+    if (opt?.guide) guides[group] = opt.guide;
+  });
+  return Object.keys(guides).length ? guides : null;
+}
+
 function openAiModal() {
   const modal = document.getElementById('aiModal');
   modal.style.display = 'flex';
@@ -1681,6 +1695,13 @@ function buildAiPrompt(template, keyword, tone, slideCount, speech, target, news
     ? ch.ai_system_prompt
     : `당신은 ${channelName} 인스타그램 계정의 SNS 콘텐츠 전문가입니다. 슬라이드 카드 뉴스 형식으로 작성합니다.${ch.description ? '\n\n브랜드 컨텍스트:\n' + ch.description : ''}`;
 
+  const guides = getSelectedGuides();
+  const optionGuides = guides
+    ? Object.values(guides).filter(Boolean).join('\n\n')
+    : `${AI_TONE_GUIDES[tone] || ''}
+${AI_SPEECH_GUIDES[speech] || AI_SPEECH_GUIDES.friendly}
+${AI_TARGET_GUIDES[target] || AI_TARGET_GUIDES.all}`;
+
   const systemMsg = `${channelBase}
 
 ## 카피라이팅 원칙
@@ -1711,9 +1732,7 @@ function buildAiPrompt(template, keyword, tone, slideCount, speech, target, news
 - 슬라이드 1 (표지): 강한 후킹. 다음 슬라이드가 궁금하게 만듦
 - 슬라이드 2~N-1: 각각 독립된 가치 단위
 - 마지막 슬라이드: **감정·인사이트·여운**으로만 마무리. 행동 촉구, 링크, 팔로우 유도 절대 금지.
-${AI_TONE_GUIDES[tone]}
-${AI_SPEECH_GUIDES[speech] || AI_SPEECH_GUIDES.friendly}
-${AI_TARGET_GUIDES[target] || AI_TARGET_GUIDES.all}`;
+${optionGuides}`;
 
   const newsContext = (newsItems && newsItems.length > 0)
     ? `\n## 최신 뉴스 헤드라인 (관련 있으면 자연스럽게 반영, 무관하면 무시)\n${newsItems.slice(0, 5).map(n => `- ${n.title} (${n.date})`).join('\n')}\n`
