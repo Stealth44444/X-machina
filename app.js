@@ -1336,7 +1336,7 @@ async function loadChannel(channelId) {
   Object.keys(moodboardState).forEach(k => { moodboardState[k] = false; });
   moodboardState[switchedName] = true;
   renderMoodboard();
-  newsCache.items = []; newsCache.fetchedAt = 0; // bust cache on channel switch
+  newsCache = { items: [], sources: {}, fetchedAt: 0 }; newsFilter = 'all'; newsPage = 0;
   try { localStorage.setItem(ACTIVE_CHANNEL_KEY, channelId); } catch {}
   document.getElementById('brandName').textContent = channel.name;
   try {
@@ -1929,19 +1929,13 @@ async function renderPresets() {
 
 // ── News Panel ───────────────────────────────────────────────────────────────
 
-const newsCache = { items: [], sources: {}, fetchedAt: 0 };
+let newsCache = { items: [], sources: {}, fetchedAt: 0 };
 const NEWS_CACHE_TTL = 30 * 60 * 1000;
 const NEWS_PER_PAGE = 8;
 let newsPage = 0;
 let newsFilter = 'all';
 let projTab = 'settings';
 
-const NEWS_SOURCE_LABELS = {
-  news:    { label: 'News',    short: 'News',    desc: 'Google · Bing RSS — keyword search, last 90 days' },
-  newsapi: { label: 'NewsAPI', short: 'NewsAPI', desc: 'NewsAPI.org — last 30 days (free plan)' },
-  blog:    { label: 'Blog',    short: 'Blog',    desc: 'gymshark.com/blog — official content only' },
-  youtube: { label: 'YouTube', short: 'YouTube', desc: 'Official Gymshark channel — latest 12 videos' },
-};
 
 function setMode(mode) {
   state.appMode = mode;
@@ -2003,7 +1997,9 @@ async function fetchGymsharkNews(forceRefresh) {
   try {
     const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
     const keywords = (ch.news_keywords || []).join(',');
-    const res = await fetch(`/api/news${keywords ? `?keywords=${encodeURIComponent(keywords)}` : ''}`);
+    const params = new URLSearchParams({ channel_id: state.projectId });
+    if (keywords) params.set('keywords', keywords);
+    const res = await fetch(`/api/news?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -2125,9 +2121,11 @@ function renderFullNewsPanel(status) {
   } else if (status === 'error' || !newsCache.items.length) {
     pane.innerHTML = `<div class="news-view-empty">소스를 불러올 수 없습니다</div>`;
   } else {
-    const ALL_SOURCES = ['news', 'newsapi', 'blog', 'youtube'];
+    const sourceKeys = Object.keys(newsCache.sources).sort((a, b) => {
+      return (newsCache.sources[b].count || 0) - (newsCache.sources[a].count || 0);
+    });
     const counts = Object.fromEntries(
-      ALL_SOURCES.map(s => [s, newsCache.items.filter(i => i.source === s).length])
+      sourceKeys.map(s => [s, newsCache.items.filter(i => i.source === s).length])
     );
     const filtered = newsFilter === 'all'
       ? newsCache.items
@@ -2139,19 +2137,15 @@ function renderFullNewsPanel(status) {
     const filterTabs = `
       <div class="news-filter-tabs">
         <button class="news-filter-btn ${newsFilter === 'all' ? 'active' : ''}" data-filter="all">ALL (${newsCache.items.length})</button>
-        ${ALL_SOURCES.map(s => {
+        ${sourceKeys.map(s => {
           const src = newsCache.sources[s];
           const failed = src && !src.ok;
-          const label = NEWS_SOURCE_LABELS[s]?.short || s;
           return `<button class="news-filter-btn ${newsFilter === s ? 'active' : ''} ${failed ? 'failed' : ''}"
-            data-filter="${s}" ${failed ? 'title="현재 연결 불가"' : ''}>
-            ${label}${src ? ` (${counts[s]})` : ''}
+            data-filter="${escHtml(s)}" ${failed ? 'title="현재 연결 불가"' : ''}>
+            ${escHtml(s)}${src ? ` (${counts[s]})` : ''}
           </button>`;
         }).join('')}
-      </div>
-      ${newsFilter !== 'all' && NEWS_SOURCE_LABELS[newsFilter]?.desc
-        ? `<div class="news-source-desc">${escHtml(NEWS_SOURCE_LABELS[newsFilter].desc)}</div>`
-        : ''}`;
+      </div>`;
 
     pane.innerHTML = filterTabs + `
       <div class="news-cards-grid">
@@ -2160,7 +2154,7 @@ function renderFullNewsPanel(status) {
           return `
           <div class="news-card" data-title="${escHtml(item.title)}">
             <div class="news-card-meta">
-              <span class="news-card-source news-card-source--${item.source}">${NEWS_SOURCE_LABELS[item.source]?.label || item.source}</span>
+              <span class="news-card-source">${escHtml(item.source)}</span>
               <span class="news-card-date">${escHtml(item.date)}</span>
             </div>
             <div class="news-card-title">${escHtml(item.title)}</div>
