@@ -406,6 +406,7 @@ body {
 
 .toggle-switch input:checked+.toggle-slider::before {
   transform: translateX(16px);
+  background: #111;
 }
 
 /* ── Slide nav, export, Pinterest ────────────────────────────────────── */
