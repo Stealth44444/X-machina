@@ -747,7 +747,7 @@ function scaleCanvas() {
   const wrapper = document.querySelector('.canvas-wrapper');
   const canvas = document.getElementById('canvas');
   const canvasH = state.canvasH || 1350;
-  const availH = area.clientHeight - 170;
+  const availH = area.clientHeight - 220;
   const availW = area.clientWidth - 40;
   const scale = Math.min(availW / 1080, availH / canvasH);
   canvas.style.width = '1080px';
