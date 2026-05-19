@@ -306,17 +306,29 @@ async function renderSlidesToUrls() {
       urls.push(url);
       await new Promise(r => setTimeout(r, 200));
     }
+    const outroPath = getChannelOutro();
+    if (outroPath) {
+      const bgImg = state.outroImage;
+      let outroHtml = bgImg
+        ? `<div style="position:absolute;inset:0;background-image:url(${bgImg});background-size:cover;background-position:${state.outroPosX ?? 50}% ${state.outroPosY ?? 50}%;"></div>`
+        : `<div style="position:absolute;inset:0;background:#0a0a0a;"></div>`;
+      outroHtml += `<div style="position:absolute;inset:0;background-image:url(${location.origin}${outroPath});background-size:cover;background-position:center;"></div>`;
+      canvas.innerHTML = outroHtml;
+      const rendered = await html2canvas(canvas, {
+        scale: 1, width: 1080, height: state.canvasH || 1350,
+        useCORS: true, allowTaint: true, backgroundColor: '#000000',
+      });
+      const dataUrl = rendered.toDataURL('image/jpeg', 0.92);
+      const url = await uploadBgImage(dataUrl, state.projectId);
+      urls.push(url);
+      await new Promise(r => setTimeout(r, 200));
+    }
   } finally {
     canvas.style.position = prevPos;
     canvas.style.left = prevLeft;
     canvas.style.top = prevTop;
     canvas.style.transform = prevTransform;
     renderCanvas();
-  }
-
-  const outroPath = getChannelOutro();
-  if (outroPath) {
-    urls.push(`${location.origin}${outroPath}`);
   }
 
   return urls;
@@ -642,7 +654,12 @@ function renderFilmstrip() {
     return ou ? `<div class="filmstrip-item filmstrip-item--outro ${state.viewingOutro ? 'active' : ''}">
       <div class="filmstrip-thumb">
         <div class="filmstrip-preview-wrap">
-          <div class="filmstrip-preview" style="background-image:url(${ou});background-size:cover;background-position:center;"></div>
+          <div class="filmstrip-preview">
+            ${state.outroImage
+              ? `<div style="position:absolute;inset:0;background-image:url(${state.outroImage});background-size:cover;background-position:${state.outroPosX ?? 50}% ${state.outroPosY ?? 50}%;"></div>`
+              : `<div style="position:absolute;inset:0;background:#0a0a0a;"></div>`}
+            <div style="position:absolute;inset:0;background-image:url(${ou});background-size:cover;background-position:center;"></div>
+          </div>
         </div>
       </div>
       <span class="filmstrip-num">아웃트로</span>
@@ -675,6 +692,7 @@ function renderFilmstrip() {
       state.selectedDragKey = null;
       renderFilmstrip();
       renderCanvas();
+      renderEditor();
     });
   }
 
@@ -744,9 +762,12 @@ function renderCanvas() {
   canvas.style.backgroundImage = 'none';
   if (state.viewingOutro) {
     const ou = getChannelOutro();
-    canvas.innerHTML = ou
-      ? `<div style="position:absolute;inset:0;background-image:url(${ou});background-size:cover;background-position:center;"></div>`
-      : `<div style="position:absolute;inset:0;background:#111;display:flex;align-items:center;justify-content:center;font-size:14px;color:#444;">아웃트로 없음</div>`;
+    const bgImg = state.outroImage;
+    let html = bgImg
+      ? `<div class="bg-layer" style="position:absolute;inset:0;background-image:url(${bgImg});background-size:cover;background-position:${state.outroPosX ?? 50}% ${state.outroPosY ?? 50}%;"></div>`
+      : `<div style="position:absolute;inset:0;background:#0a0a0a;"></div>`;
+    if (ou) html += `<div style="position:absolute;inset:0;background-image:url(${ou});background-size:cover;background-position:center;pointer-events:none;"></div>`;
+    canvas.innerHTML = html;
     return;
   }
   const template = getTemplate(state.templateId);
@@ -780,7 +801,68 @@ function attachPosPicker(picker, onMove, onEnd) {
   picker.addEventListener('pointercancel', () => { active = false; });
 }
 
+function renderOutroEditor() {
+  const fieldsEl = document.getElementById('fields');
+  const hasImg = !!state.outroImage;
+  fieldsEl.innerHTML = `
+    <div class="slide-info"><span>OUTRO</span></div>
+    <div class="field-group">
+      <label class="field-label">배경 이미지</label>
+      <button class="field-image-btn ${hasImg ? 'has-image' : ''}" data-key="outroImage"
+        style="${hasImg ? `background-image:url(${state.outroImage});background-size:cover;background-position:${state.outroPosX ?? 50}% ${state.outroPosY ?? 50}%;` : ''}">
+        ${hasImg ? '변경' : '업로드'}
+      </button>
+      ${hasImg ? `<button class="field-img-clear" id="outroClearBtn">이미지 삭제</button>` : ''}
+    </div>
+    ${hasImg ? `<div class="field-group">
+      <label class="field-label">위치</label>
+      <div class="pos-picker" style="position:relative;width:100%;height:60px;background:#111;border:1px solid #222;border-radius:3px;cursor:crosshair;margin-top:4px;">
+        <div class="pos-handle" style="position:absolute;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;left:${state.outroPosX ?? 50}%;top:${state.outroPosY ?? 50}%;"></div>
+      </div>
+    </div>` : ''}`;
+
+  const imgBtn = fieldsEl.querySelector('.field-image-btn[data-key="outroImage"]');
+  if (imgBtn) {
+    imgBtn.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*';
+      input.onchange = e => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async ev => {
+          try { state.outroImage = await uploadBgImage(ev.target.result, state.projectId); }
+          catch { state.outroImage = await compressImage(ev.target.result); }
+          renderCanvas(); renderFilmstrip(); renderOutroEditor(); saveAutoSave();
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    });
+  }
+
+  const clearBtn = document.getElementById('outroClearBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      state.outroImage = ''; state.outroPosX = 50; state.outroPosY = 50;
+      renderCanvas(); renderFilmstrip(); renderOutroEditor(); saveAutoSave();
+    });
+  }
+
+  const pickerEl = fieldsEl.querySelector('.pos-picker');
+  if (pickerEl) {
+    attachPosPicker(pickerEl,
+      (x, y) => {
+        state.outroPosX = x; state.outroPosY = y;
+        const bgL = document.querySelector('#canvas .bg-layer');
+        if (bgL) bgL.style.backgroundPosition = `${x}% ${y}%`;
+      },
+      () => renderFilmstrip()
+    );
+  }
+}
+
 function renderEditor() {
+  if (state.viewingOutro) { renderOutroEditor(); return; }
   const template = getTemplate(state.templateId);
   const fieldsEl = document.getElementById('fields');
   const slideState = state.slides[state.slideIndex] || {};
