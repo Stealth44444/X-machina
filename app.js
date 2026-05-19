@@ -1673,6 +1673,8 @@ function openAiModal() {
   if (histNav) histNav.style.display = 'none';
   renderAiNewsPreview();
   renderAiSlideTargetPicker();
+  const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
+  renderAiOptions(ch.modal_options || DEFAULT_MODAL_OPTIONS);
   setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
 }
 
@@ -1776,9 +1778,10 @@ async function runAiGenerate() {
   const keyword = document.getElementById('aiKeyword').value.trim();
   if (!keyword) { document.getElementById('aiKeyword').focus(); return; }
 
-  const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
-  const speech = document.querySelector('.ai-speech-btn.active')?.dataset.speech || 'friendly';
-  const target = document.querySelector('.ai-target-btn.active')?.dataset.target || 'all';
+  const activeToneId = document.querySelector('#aiOptionsContainer .ai-opt-btn.active[data-group="tone"]')?.dataset.id || 'casual';
+  const tone = activeToneId;
+  const speech = 'friendly';
+  const target = 'all';
   const useNews = document.getElementById('aiNewsToggle')?.checked !== false;
   const newsItems = useNews && newsCache.items.length > 0 ? newsCache.items : null;
   const template = getTemplate(state.templateId);
@@ -1805,7 +1808,7 @@ async function runAiGenerate() {
         model: 'gpt-4o',
         messages: aiConversationHistory,
         response_format: { type: 'json_object' },
-        temperature: tone === 'info' ? 0.65 : 0.80,
+        temperature: activeToneId === 'info' ? 0.65 : 0.80,
         max_tokens: 10000,
       }),
     });
@@ -2000,27 +2003,9 @@ function initAiModal() {
   document.getElementById('aiKeyword').addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAiGenerate();
   });
-  document.querySelectorAll('.ai-tone-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ai-tone-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
   document.querySelectorAll('.ai-count-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
-  document.querySelectorAll('.ai-speech-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ai-speech-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
-  document.querySelectorAll('.ai-target-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ai-target-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
