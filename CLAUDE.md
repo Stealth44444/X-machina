@@ -521,6 +521,11 @@ vercel --prod
 
 ## 개발 규칙
 
+### 작업 시작 전 필수 확인
+- **항상 플러그인과 스킬 사용을 먼저 고려할 것.** 새로운 기능 기획 → brainstorming 스킬, 구현 계획 → writing-plans 스킬, 코드 실행 → subagent-driven-development 스킬.
+- 1%라도 스킬이 적용될 가능성이 있으면 반드시 해당 스킬을 호출한 후 작업 시작.
+- 스킬 없이 바로 코드 작성에 들어가지 말 것.
+
 ### 코드
 - 번들러 없음 — npm 패키지 설치 금지, CDN URL만 사용
 - 모든 Supabase 클라이언트 호출은 `async/await` + `try/catch`
