@@ -1355,7 +1355,7 @@ body {
 
 .news-card-source {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 4px 10px;
   background: none;
   border: 1px solid #1e1e1e;
   border-radius: 3px;
@@ -1364,6 +1364,7 @@ body {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.5px;
+  transition: border-color 0.1s, color 0.1s;
 }
 
 /* ── Unified active state for all panel toggle buttons ───────────────────── */
