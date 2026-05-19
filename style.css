@@ -1164,7 +1164,7 @@ body {
 
 .rss-sources-hint {
   font-size: 10px;
-  color: #2a2a2a;
+  color: #444;
 }
 
 .rss-source-list {
@@ -2278,7 +2278,7 @@ body {
   font-family: inherit; outline: none;
   transition: border-color 0.15s;
 }
-.ch-input:focus { border-color: #333; }
+.ch-input:focus { border-color: #fff; }
 .ch-textarea { resize: vertical; min-height: 80px; }
 .ch-input--color {
   padding: 2px 4px; height: 34px; width: 40px; cursor: pointer;
@@ -2303,8 +2303,11 @@ body {
 }
 .ch-btn {
   padding: 7px 16px; border-radius: 4px; font-size: 12px;
-  font-weight: 600; cursor: pointer; letter-spacing: 0.5px;
+  font-family: inherit; font-weight: 600; cursor: pointer; letter-spacing: 0.5px;
+  background: none; border: 1px solid #222; color: #888;
+  transition: border-color 0.15s, color 0.15s;
 }
+.ch-btn:hover { border-color: #555; color: #ccc; }
 .ch-btn--primary { background: #ffffff; border: none; color: #000; }
 .ch-btn--primary:hover { background: #e8e8e8; }
 .ch-btn--danger { background: transparent; border: 1px solid #3a1a1a; color: #a04040; }
