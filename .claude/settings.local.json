@@ -44,7 +44,27 @@
       "Bash(npx supabase@latest db execute --help)",
       "Bash(npx supabase@latest db query --help)",
       "Bash(npx supabase@latest db query --db-url \"postgresql://postgres:se3%3F3kG_eSFT%26%3F7@db.iivohetwfssykiuyivne.supabase.co:5432/postgres\" -f supabase-schema.sql)",
-      "Bash(npx supabase@latest db query --db-url \"postgresql://postgres.iivohetwfssykiuyivne:se3%3F3kG_eSFT%26%3F7@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres\" -f supabase-schema.sql)"
+      "Bash(npx supabase@latest db query --db-url \"postgresql://postgres.iivohetwfssykiuyivne:se3%3F3kG_eSFT%26%3F7@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres\" -f supabase-schema.sql)",
+      "Bash(not exist *)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"c:\\\\Users\\\\Sony\\\\Desktop\\\\Gymspire\\\\docs\\\\superpowers\\\\specs\")",
+      "Bash(git rm *)",
+      "Bash(mkdir -p \"c:\\\\Users\\\\Sony\\\\Desktop\\\\Gymspire\\\\docs\\\\superpowers\\\\specs\")",
+      "Bash(node --input-type=module)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(node scripts/test-rss-feeds.mjs)",
+      "Bash(node scripts/test-rss-fixes.mjs)",
+      "Bash(node scripts/debug-rss-parse.mjs)",
+      "Bash(node scripts/test-replacements.mjs)",
+      "Bash(node scripts/debug-parser-live.mjs)",
+      "Bash(node scripts/debug-economist.mjs)",
+      "Bash(node scripts/debug-economist-verify.mjs)",
+      "Bash(node scripts/test-missing-feeds.mjs)",
+      "Bash(gh auth *)",
+      "Bash(git remote *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Sony\\Desktop\\Gymspire\\docs\\superpowers\\specs",
+      "c:\\Users\\Sony\\.claude\\projects\\c--Users-Sony-Desktop-Gymspire\\memory"
     ]
   }
 }
