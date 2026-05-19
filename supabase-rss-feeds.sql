@@ -27,7 +27,7 @@ UPDATE channels SET rss_feeds = '[
   {"id":"hiphople",     "label":"힙합엘이",        "url":"https://www.hiphople.com/rss"},
   {"id":"nme",          "label":"NME",           "url":"https://www.nme.com/feed"},
   {"id":"stereogum",    "label":"Stereogum",     "url":"https://www.stereogum.com/feed/"},
-  {"id":"rap_radar",    "label":"Rap Radar",     "url":"https://rapradar.com/feed/"}
+  {"id":"thesource",    "label":"The Source",    "url":"https://thesource.com/feed/"}
 ]'::jsonb WHERE name = 'Nightcall.audio';
 
 -- CAPITALFLOW
@@ -37,7 +37,7 @@ UPDATE channels SET rss_feeds = '[
   {"id":"economist",   "label":"The Economist",     "url":"https://www.economist.com/finance-and-economics/rss.xml"},
   {"id":"marketwatch", "label":"MarketWatch",       "url":"https://feeds.marketwatch.com/marketwatch/topstories/"},
   {"id":"ft",          "label":"Financial Times",   "url":"https://www.ft.com/rss/home"},
-  {"id":"wsj",         "label":"WSJ Markets",       "url":"https://feeds.a.dj.com/rss/RSSMarketsMain.xml"},
+  {"id":"cnbc",        "label":"CNBC Markets",      "url":"https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258"},
   {"id":"investing",   "label":"Investing.com",     "url":"https://www.investing.com/rss/news.rss"},
   {"id":"hankyung",    "label":"한국경제",            "url":"https://www.hankyung.com/feed/all-news"},
   {"id":"mk",          "label":"매일경제",            "url":"https://www.mk.co.kr/rss/30100041/"}

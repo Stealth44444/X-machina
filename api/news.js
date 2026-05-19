@@ -202,22 +202,23 @@ async function fetchRssItems(url, label) {
 
       if (format === 'rss') {
         title = (
-          block.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ||
-          block.match(/<title>([^<]*)<\/title>/)?.[1] || ''
+          block.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]>/)?.[1] ||
+          block.match(/<title[^>]*>([\s\S]*?)<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() || ''
         ).replace(/\s*[-|]\s*[^-|]{1,50}$/, '').trim();
         ms = new Date(block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || 0).getTime();
-        link = block.match(/<link>(https?:\/\/[^<\s]+)/)?.[1] ||
-               block.match(/<guid[^>]*>(https?:\/\/[^<\s]+)/)?.[1] || '';
+        link = block.match(/<link>\s*(https?:\/\/[^<\s]+)/)?.[1] ||
+               block.match(/<link[^>]+href="(https?:\/\/[^"]+)"/)?.[1] ||
+               block.match(/<guid[^>]*>\s*(https?:\/\/[^<\s]+)/)?.[1] || '';
       } else {
         title = (
-          block.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ||
-          block.match(/<title[^>]*>([^<]*)<\/title>/)?.[1] || ''
+          block.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]>/)?.[1] ||
+          block.match(/<title[^>]*>([\s\S]*?)<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() || ''
         ).replace(/\s*[-|]\s*[^-|]{1,50}$/, '').trim();
         const dateStr = block.match(/<updated>(.*?)<\/updated>/)?.[1] ||
                         block.match(/<published>(.*?)<\/published>/)?.[1] || '';
         ms = new Date(dateStr).getTime();
         link = block.match(/<link[^>]+href="(https?:\/\/[^"]+)"/)?.[1] ||
-               block.match(/<link>(https?:\/\/[^<\s]+)<\/link>/)?.[1] || '';
+               block.match(/<link>\s*(https?:\/\/[^<\s]+)/)?.[1] || '';
       }
 
       if (!title || !ms || ms < cut) continue;
