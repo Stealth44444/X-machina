@@ -1132,6 +1132,70 @@ body {
   justify-content: flex-end;
 }
 
+.rss-source-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+  border: 1px solid #1a1a1a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rss-source-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #141414;
+}
+
+.rss-source-item:last-child { border-bottom: none; }
+
+.rss-source-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ccc;
+  min-width: 120px;
+}
+
+.rss-source-domain {
+  font-size: 10px;
+  color: #3a3a3a;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rss-source-del {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid #222;
+  border-radius: 3px;
+  color: #444;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.rss-source-del:hover { border-color: #a04040; color: #e05050; }
+
+.rss-source-add {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.rss-source-empty {
+  padding: 12px;
+  font-size: 11px;
+  color: #333;
+  text-align: center;
+}
+
 .proj-save-status {
   flex: 1;
   font-size: 10px;
@@ -1262,6 +1326,8 @@ body {
   text-transform: uppercase;
   padding: 2px 8px;
   border-radius: 3px;
+  background: #161616;
+  color: #555;
 }
 
 .news-card-source--news    { background: #0d1a2a; color: #4a8fd4; }
