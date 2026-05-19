@@ -2036,6 +2036,7 @@ async function savePreset(nameOverride) {
   const name = nameOverride || `${template.name} ${mmdd} ${hhmm}`;
   try {
     const saved = await dbUpsertPreset({
+      ...(state.activePresetId ? { id: state.activePresetId } : {}),
       channel_id: state.projectId,
       name,
       slides_json: JSON.parse(JSON.stringify(state.slides)),
