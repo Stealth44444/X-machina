@@ -1132,6 +1132,33 @@ body {
   justify-content: flex-end;
 }
 
+.rss-sources-panel {
+  padding: 16px 32px 20px;
+  border-bottom: 1px solid #111;
+  background: #0a0a0a;
+}
+
+.rss-sources-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rss-sources-title {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.rss-sources-hint {
+  font-size: 10px;
+  color: #2a2a2a;
+}
+
 .rss-source-list {
   display: flex;
   flex-direction: column;
@@ -1184,7 +1211,7 @@ body {
 
 .rss-source-add {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr auto auto;
   gap: 6px;
   margin-top: 6px;
 }
@@ -1569,6 +1596,7 @@ body {
 }
 
 .preset-name {
+  font-family: inherit;
   font-size: 11px;
   font-weight: 500;
   color: #666;

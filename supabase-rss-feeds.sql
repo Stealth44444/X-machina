@@ -12,35 +12,41 @@ UPDATE channels SET rss_feeds = '[
   {"id":"middleeasy",   "label":"Middle Easy",    "url":"https://middleeasy.com/feed/"},
   {"id":"espnmma",      "label":"ESPN MMA",       "url":"https://www.espn.com/espn/rss/mma/news"},
   {"id":"mmamania",     "label":"MMA Mania",      "url":"https://www.mmamania.com/rss/current.xml"},
-  {"id":"fightful",     "label":"Fightful",       "url":"https://www.fightful.com/feed"}
+  {"id":"fightful",     "label":"Fightful",       "url":"https://www.fightful.com/feed"},
+  {"id":"bloodyelbow",  "label":"Bloody Elbow",   "url":"https://www.bloodyelbow.com/feed/"}
 ]'::jsonb WHERE name = 'mma_seoul';
 
 -- Nightcall.audio
 -- 변경: Complex(404)→NME, Pitchfork(404)→Stereogum, The FADER(404)→Rap Radar, HipHopDX(410) 제거, IZM(404) 제거, DC Inside(404) 제거
+-- 추가: Pitchfork(rss/news/ 경로 작동 확인), Consequence of Sound
 UPDATE channels SET rss_feeds = '[
-  {"id":"xxl",          "label":"XXL Mag",       "url":"https://www.xxlmag.com/feed/"},
-  {"id":"allhiphop",    "label":"AllHipHop",     "url":"https://allhiphop.com/feed/"},
-  {"id":"hypebeast",    "label":"Hypebeast",     "url":"https://hypebeast.com/feed"},
-  {"id":"billboard",    "label":"Billboard",     "url":"https://www.billboard.com/feed/"},
-  {"id":"rollingstone", "label":"Rolling Stone", "url":"https://www.rollingstone.com/music/music-news/feed/"},
-  {"id":"variety",      "label":"Variety Music", "url":"https://variety.com/v/music/feed/"},
-  {"id":"hiphople",     "label":"힙합엘이",        "url":"https://www.hiphople.com/rss"},
-  {"id":"nme",          "label":"NME",           "url":"https://www.nme.com/feed"},
-  {"id":"stereogum",    "label":"Stereogum",     "url":"https://www.stereogum.com/feed/"},
-  {"id":"thesource",    "label":"The Source",    "url":"https://thesource.com/feed/"}
+  {"id":"xxl",          "label":"XXL Mag",              "url":"https://www.xxlmag.com/feed/"},
+  {"id":"allhiphop",    "label":"AllHipHop",            "url":"https://allhiphop.com/feed/"},
+  {"id":"hypebeast",    "label":"Hypebeast",            "url":"https://hypebeast.com/feed"},
+  {"id":"billboard",    "label":"Billboard",            "url":"https://www.billboard.com/feed/"},
+  {"id":"rollingstone", "label":"Rolling Stone",        "url":"https://www.rollingstone.com/music/music-news/feed/"},
+  {"id":"variety",      "label":"Variety Music",        "url":"https://variety.com/v/music/feed/"},
+  {"id":"hiphople",     "label":"힙합엘이",               "url":"https://www.hiphople.com/rss"},
+  {"id":"nme",          "label":"NME",                  "url":"https://www.nme.com/feed"},
+  {"id":"stereogum",    "label":"Stereogum",            "url":"https://www.stereogum.com/feed/"},
+  {"id":"thesource",    "label":"The Source",           "url":"https://thesource.com/feed/"},
+  {"id":"pitchfork",    "label":"Pitchfork",            "url":"https://pitchfork.com/rss/news/"},
+  {"id":"consequence",  "label":"Consequence of Sound", "url":"https://consequenceofsound.net/feed/"}
 ]'::jsonb WHERE name = 'Nightcall.audio';
 
 -- CAPITALFLOW
 -- 변경: Reuters(연결불가)→Investing.com, 조선비즈(404)→WSJ Markets, 이데일리(빈피드) 제거, 서울경제(404) 제거, DC Inside 2개(404) 제거
+-- 추가: Seeking Alpha (작동 확인)
 UPDATE channels SET rss_feeds = '[
-  {"id":"bloomberg",   "label":"Bloomberg Markets", "url":"https://feeds.bloomberg.com/markets/news.rss"},
-  {"id":"economist",   "label":"The Economist",     "url":"https://www.economist.com/finance-and-economics/rss.xml"},
-  {"id":"marketwatch", "label":"MarketWatch",       "url":"https://feeds.marketwatch.com/marketwatch/topstories/"},
-  {"id":"ft",          "label":"Financial Times",   "url":"https://www.ft.com/rss/home"},
-  {"id":"cnbc",        "label":"CNBC Markets",      "url":"https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258"},
-  {"id":"investing",   "label":"Investing.com",     "url":"https://www.investing.com/rss/news.rss"},
-  {"id":"hankyung",    "label":"한국경제",            "url":"https://www.hankyung.com/feed/all-news"},
-  {"id":"mk",          "label":"매일경제",            "url":"https://www.mk.co.kr/rss/30100041/"}
+  {"id":"bloomberg",      "label":"Bloomberg Markets", "url":"https://feeds.bloomberg.com/markets/news.rss"},
+  {"id":"economist",      "label":"The Economist",     "url":"https://www.economist.com/finance-and-economics/rss.xml"},
+  {"id":"marketwatch",    "label":"MarketWatch",       "url":"https://feeds.marketwatch.com/marketwatch/topstories/"},
+  {"id":"ft",             "label":"Financial Times",   "url":"https://www.ft.com/rss/home"},
+  {"id":"cnbc",           "label":"CNBC Markets",      "url":"https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258"},
+  {"id":"investing",      "label":"Investing.com",     "url":"https://www.investing.com/rss/news.rss"},
+  {"id":"hankyung",       "label":"한국경제",            "url":"https://www.hankyung.com/feed/all-news"},
+  {"id":"mk",             "label":"매일경제",            "url":"https://www.mk.co.kr/rss/30100041/"},
+  {"id":"seekingalpha",   "label":"Seeking Alpha",     "url":"https://seekingalpha.com/feed.xml"}
 ]'::jsonb WHERE name = 'CAPITALFLOW';
 
 -- spacelog
@@ -59,6 +65,7 @@ UPDATE channels SET rss_feeds = '[
 
 -- obscurelife.kr
 -- 변경: Wallpaper* URL 수정, Business of Fashion URL 수정(/rss→/feed), Vogue Business(404) 제거, 중앙일보(연결불가) 제거, DC Inside(404) 제거, Fashionista/Elle/Harper's Bazaar 추가
+-- 추가: Dazed Korea, Esquire Korea, Esquire (global), CR Fashion Book, AnOther Magazine (작동 확인)
 UPDATE channels SET rss_feeds = '[
   {"id":"hypebeast",    "label":"Hypebeast",           "url":"https://hypebeast.com/feed"},
   {"id":"highsnobiety", "label":"Highsnobiety",        "url":"https://www.highsnobiety.com/feed"},
@@ -73,5 +80,10 @@ UPDATE channels SET rss_feeds = '[
   {"id":"voguekorea",   "label":"Vogue Korea",         "url":"https://www.vogue.co.kr/feed"},
   {"id":"fashionista",  "label":"Fashionista",         "url":"https://fashionista.com/feed"},
   {"id":"elle",         "label":"Elle",                "url":"https://www.elle.com/rss/all.xml/"},
-  {"id":"harpers",      "label":"Harpers Bazaar",      "url":"https://www.harpersbazaar.com/rss/all.xml/"}
+  {"id":"harpers",      "label":"Harpers Bazaar",      "url":"https://www.harpersbazaar.com/rss/all.xml/"},
+  {"id":"dazedkorea",   "label":"Dazed Korea",         "url":"https://www.dazedkorea.com/rss"},
+  {"id":"esquirekorea", "label":"Esquire Korea",       "url":"https://www.esquirekorea.co.kr/rss"},
+  {"id":"esquire",      "label":"Esquire",             "url":"https://www.esquire.com/rss/all.xml/"},
+  {"id":"crfashion",    "label":"CR Fashion Book",     "url":"https://www.crfashionbook.com/rss"},
+  {"id":"anothermag",   "label":"AnOther Magazine",    "url":"https://www.anothermag.com/feed/rss"}
 ]'::jsonb WHERE name = 'obscurelife.kr';

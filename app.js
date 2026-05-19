@@ -1956,6 +1956,7 @@ function setMode(mode) {
       renderProjectSettings();
     } else {
       const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
+      localRssFeeds = Array.isArray(ch.rss_feeds) ? [...ch.rss_feeds] : [];
       newsView.innerHTML = `
         <div class="news-feed-view">
           <div class="news-feed-header">
@@ -1964,12 +1965,21 @@ function setMode(mode) {
               <h2 class="news-feed-title">뉴스 피드</h2>
             </div>
             <div class="news-feed-header-right">
+              <button class="news-refresh-btn" id="newsSrcToggleBtn">소스 관리</button>
               <button class="news-refresh-btn" id="newsRefreshBtn">새로고침</button>
               <button class="news-refresh-btn" id="newsFeedCloseBtn">나가기</button>
             </div>
           </div>
+          <div id="rssSourcesPane" style="display:none"></div>
           <div id="projNewsPane"></div>
         </div>`;
+      document.getElementById('newsSrcToggleBtn').addEventListener('click', () => {
+        const pane = document.getElementById('rssSourcesPane');
+        const isOpen = pane.style.display !== 'none';
+        pane.style.display = isOpen ? 'none' : '';
+        document.getElementById('newsSrcToggleBtn').classList.toggle('active', !isOpen);
+        if (!isOpen) renderRssSourcesPane();
+      });
       document.getElementById('newsRefreshBtn').addEventListener('click', () => {
         newsPage = 0; newsFilter = 'all'; fetchGymsharkNews(true);
       });
@@ -2034,8 +2044,6 @@ function renderProjectSettings() {
   const view = document.getElementById('newsView');
   if (!view) return;
   const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
-  localRssFeeds = Array.isArray(ch.rss_feeds) ? [...ch.rss_feeds] : [];
-
   view.innerHTML = `
     <div class="proj-settings-view">
       <div class="proj-settings-inner">
@@ -2078,16 +2086,6 @@ function renderProjectSettings() {
               <input class="ch-input" id="projColorHex" type="text" value="${escHtml(ch.color || '#ffffff')}">
             </div>
           </div>
-          <div class="ch-field">
-            <label class="ch-label">뉴스 소스</label>
-            <p class="ch-hint">채널별 RSS 피드. 저장 버튼으로 반영됩니다.</p>
-            ${renderRssSourceList()}
-            <div class="rss-source-add">
-              <input class="ch-input" id="rssAddUrl" type="text" placeholder="https://example.com/feed">
-              <input class="ch-input" id="rssAddLabel" type="text" placeholder="Source Name">
-              <button class="ch-btn" id="rssAddBtn">추가</button>
-            </div>
-          </div>
         </div>
         <div class="proj-settings-footer">
           <span class="proj-save-status" id="projSaveStatus"></span>
@@ -2102,35 +2100,6 @@ function renderProjectSettings() {
   colorHex.addEventListener('input', () => {
     if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
   });
-  function bindRssDeleteBtns() {
-    document.querySelectorAll('.rss-source-del').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.idx, 10);
-        localRssFeeds.splice(idx, 1);
-        const listEl = document.querySelector('.rss-source-list');
-        if (listEl) listEl.outerHTML = renderRssSourceList();
-        bindRssDeleteBtns();
-      });
-    });
-  }
-  bindRssDeleteBtns();
-
-  document.getElementById('rssAddBtn').addEventListener('click', () => {
-    const url   = document.getElementById('rssAddUrl').value.trim();
-    const label = document.getElementById('rssAddLabel').value.trim();
-    if (!url.startsWith('https://')) { alert('URL은 https://로 시작해야 합니다'); return; }
-    if (!label) { alert('라벨을 입력해 주세요'); return; }
-    if (localRssFeeds.some(f => f.url === url)) { alert('이미 추가된 URL입니다'); return; }
-    const id = label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
-    localRssFeeds.push({ id, label, url });
-    const listEl = document.querySelector('.rss-source-list');
-    if (listEl) listEl.outerHTML = renderRssSourceList();
-    else document.querySelector('.rss-source-add').insertAdjacentHTML('beforebegin', renderRssSourceList());
-    document.getElementById('rssAddUrl').value = '';
-    document.getElementById('rssAddLabel').value = '';
-    bindRssDeleteBtns();
-  });
-
   document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
   document.getElementById('projSettingsCloseBtn').addEventListener('click', () => setMode('edit'));
 }
@@ -2151,7 +2120,6 @@ async function saveProjectSettings() {
     color: document.getElementById('projColorHex').value.trim() || ch.color,
     news_keywords: keywords,
     ai_system_prompt: document.getElementById('projSystemPrompt').value.trim() || null,
-    rss_feeds: localRssFeeds,
   };
   try {
     await dbUpsertChannel(updates);
@@ -2166,6 +2134,64 @@ async function saveProjectSettings() {
     saveBtn.textContent = '저장';
     saveBtn.disabled = false;
     if (statusEl) statusEl.textContent = '저장 실패';
+    alert('저장 실패: ' + e.message);
+  }
+}
+
+function renderRssSourcesPane() {
+  const pane = document.getElementById('rssSourcesPane');
+  if (!pane) return;
+  pane.innerHTML = `
+    <div class="rss-sources-panel">
+      <div class="rss-sources-header">
+        <span class="rss-sources-title">뉴스 소스</span>
+        <span class="rss-sources-hint">채널별 RSS 피드 관리 — 저장 후 새로고침 시 반영됩니다</span>
+      </div>
+      ${renderRssSourceList()}
+      <div class="rss-source-add">
+        <input class="ch-input" id="rssAddUrl" type="text" placeholder="https://example.com/feed">
+        <input class="ch-input" id="rssAddLabel" type="text" placeholder="Source Name">
+        <button class="ch-btn" id="rssAddBtn">추가</button>
+        <button class="ch-btn ch-btn--primary" id="rssSaveBtn">저장</button>
+      </div>
+    </div>`;
+
+  pane.querySelectorAll('.rss-source-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      localRssFeeds.splice(parseInt(btn.dataset.idx, 10), 1);
+      renderRssSourcesPane();
+    });
+  });
+
+  document.getElementById('rssAddBtn').addEventListener('click', () => {
+    const url   = document.getElementById('rssAddUrl').value.trim();
+    const label = document.getElementById('rssAddLabel').value.trim();
+    if (!url.startsWith('https://')) { alert('URL은 https://로 시작해야 합니다'); return; }
+    if (!label) { alert('라벨을 입력해 주세요'); return; }
+    if (localRssFeeds.some(f => f.url === url)) { alert('이미 추가된 URL입니다'); return; }
+    const id = label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+    localRssFeeds.push({ id, label, url });
+    renderRssSourcesPane();
+  });
+
+  document.getElementById('rssSaveBtn').addEventListener('click', saveRssFeeds);
+}
+
+async function saveRssFeeds() {
+  const ch = (state.channels || []).find(c => c.id === state.projectId);
+  if (!ch) return;
+  const btn = document.getElementById('rssSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
+  try {
+    await dbUpsertChannel({ id: ch.id, rss_feeds: localRssFeeds });
+    state.channels = await dbGetChannels();
+    if (typeof dashState !== 'undefined') dashState.channels = state.channels;
+    newsCache = { items: [], sources: {}, fetchedAt: 0 };
+    if (btn) { btn.disabled = false; btn.textContent = '저장됨'; setTimeout(() => { if (btn) btn.textContent = '저장'; }, 1500); }
+    newsPage = 0; newsFilter = 'all';
+    fetchGymsharkNews(true);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '저장'; }
     alert('저장 실패: ' + e.message);
   }
 }
