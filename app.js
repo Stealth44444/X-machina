@@ -1339,6 +1339,27 @@ const AI_TONE_GUIDES = {
 - 희소성·긴박감 자연스럽게 (강요 아닌 팩트 기반)`,
 };
 
+const DEFAULT_MODAL_OPTIONS = {
+  speech: [
+    { id: 'friendly', label: '친근 존댓말', guide: AI_SPEECH_GUIDES.friendly },
+    { id: 'mz',       label: 'MZ 반말',    guide: AI_SPEECH_GUIDES.mz },
+    { id: 'formal',   label: '격식체',      guide: AI_SPEECH_GUIDES.formal },
+  ],
+  tone: [
+    { id: 'casual', label: '캐주얼',   guide: AI_TONE_GUIDES.casual },
+    { id: 'hype',   label: '자극',     guide: AI_TONE_GUIDES.hype },
+    { id: 'info',   label: '정보성',   guide: AI_TONE_GUIDES.info },
+    { id: 'promo',  label: '프로모션', guide: AI_TONE_GUIDES.promo },
+  ],
+  target: [
+    { id: 'all',   label: '전체',  guide: AI_TARGET_GUIDES.all },
+    { id: 'women', label: '여성향', guide: AI_TARGET_GUIDES.women },
+    { id: 'men',   label: '남성향', guide: AI_TARGET_GUIDES.men },
+  ],
+  depth: [],
+  angle: [],
+};
+
 const GYMSHARK_BRAND_KNOWLEDGE = `
 ## Gymshark 브랜드 지식 (콘텐츠에 적극 활용할 것)
 
@@ -1588,6 +1609,32 @@ function renderAiHistoryNav() {
       renderAiPreview(aiPendingSlides, getTemplate(state.templateId));
       renderAiHistoryNav();
     }
+  });
+}
+
+function renderAiOptions(modalOptions) {
+  const container = document.getElementById('aiOptionsContainer');
+  if (!container) return;
+  const groups = ['speech', 'tone', 'target', 'depth', 'angle'];
+  const groupLabels = { speech: '말투', tone: '톤', target: '타겟', depth: '밀도', angle: '앵글' };
+
+  container.innerHTML = groups.map(group => {
+    const opts = modalOptions?.[group];
+    if (!opts?.length) return '';
+    return `<div class="ai-option-group">
+      <span class="ai-option-label">${groupLabels[group]}</span>
+      <div class="ai-opt-btns">
+        ${opts.map((o, i) => `<button class="ai-opt-btn${i === 0 ? ' active' : ''}" data-group="${group}" data-id="${o.id}">${o.label}</button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.ai-opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll(`.ai-opt-btn[data-group="${btn.dataset.group}"]`)
+        .forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
   });
 }
 
