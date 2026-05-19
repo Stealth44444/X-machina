@@ -1,6 +1,7 @@
 KakaoTalk_*.png
 짐스파이어 로고.png
-docs/
+docs/*
+!docs/superpowers/
 .vercel
 .env
 .env.local
