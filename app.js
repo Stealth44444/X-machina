@@ -532,9 +532,9 @@ async function runSlideRegen() {
     return `- ${k}: ${def?.label || k}`;
   }).join('\n');
 
-  const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
-  const speech = document.querySelector('.ai-speech-btn.active')?.dataset.speech || 'friendly';
-  const target = document.querySelector('.ai-target-btn.active')?.dataset.target || 'all';
+  const tone = document.querySelector('#aiOptionsContainer .ai-opt-btn.active[data-group="tone"]')?.dataset.id || 'casual';
+  const speech = document.querySelector('#aiOptionsContainer .ai-opt-btn.active[data-group="speech"]')?.dataset.id || 'friendly';
+  const target = document.querySelector('#aiOptionsContainer .ai-opt-btn.active[data-group="target"]')?.dataset.id || 'all';
 
   const contextSlides = state.slides.map((s, i) => {
     const vals = keys.map(k => `${k}: ${s[k] || ''}`).join(', ');
@@ -1896,7 +1896,7 @@ async function runAiFeedback() {
   }
   if (!aiConversationHistory.length) return;
   const template = getTemplate(state.templateId);
-  const tone = document.querySelector('.ai-tone-btn.active')?.dataset.tone || 'casual';
+  const tone = document.querySelector('#aiOptionsContainer .ai-opt-btn.active[data-group="tone"]')?.dataset.id || 'casual';
   const feedbackBtn = document.getElementById('aiFeedbackBtn');
   const genBtn = document.getElementById('aiGenerate');
   feedbackBtn.disabled = true;
