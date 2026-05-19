@@ -1935,6 +1935,7 @@ const NEWS_PER_PAGE = 8;
 let newsPage = 0;
 let newsFilter = 'all';
 let projTab = 'settings';
+let localRssFeeds = [];
 
 
 function setMode(mode) {
@@ -2013,10 +2014,27 @@ async function fetchGymsharkNews(forceRefresh) {
   }
 }
 
+function renderRssSourceList() {
+  if (!localRssFeeds.length) {
+    return `<div class="rss-source-list"><div class="rss-source-empty">소스 없음</div></div>`;
+  }
+  const items = localRssFeeds.map((feed, i) => {
+    let domain = '';
+    try { domain = new URL(feed.url).hostname.replace(/^www\./, ''); } catch {}
+    return `<div class="rss-source-item">
+      <span class="rss-source-label">${escHtml(feed.label)}</span>
+      <span class="rss-source-domain">${escHtml(domain)}</span>
+      <button class="rss-source-del" data-idx="${i}">삭제</button>
+    </div>`;
+  }).join('');
+  return `<div class="rss-source-list">${items}</div>`;
+}
+
 function renderProjectSettings() {
   const view = document.getElementById('newsView');
   if (!view) return;
   const ch = (state.channels || []).find(c => c.id === state.projectId) || {};
+  localRssFeeds = Array.isArray(ch.rss_feeds) ? [...ch.rss_feeds] : [];
 
   view.innerHTML = `
     <div class="proj-settings-view">
@@ -2060,6 +2078,16 @@ function renderProjectSettings() {
               <input class="ch-input" id="projColorHex" type="text" value="${escHtml(ch.color || '#ffffff')}">
             </div>
           </div>
+          <div class="ch-field">
+            <label class="ch-label">뉴스 소스</label>
+            <p class="ch-hint">채널별 RSS 피드. 저장 버튼으로 반영됩니다.</p>
+            ${renderRssSourceList()}
+            <div class="rss-source-add">
+              <input class="ch-input" id="rssAddUrl" type="text" placeholder="https://example.com/feed">
+              <input class="ch-input" id="rssAddLabel" type="text" placeholder="Source Name">
+              <button class="ch-btn" id="rssAddBtn">추가</button>
+            </div>
+          </div>
         </div>
         <div class="proj-settings-footer">
           <span class="proj-save-status" id="projSaveStatus"></span>
@@ -2074,6 +2102,35 @@ function renderProjectSettings() {
   colorHex.addEventListener('input', () => {
     if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorInput.value = colorHex.value;
   });
+  function bindRssDeleteBtns() {
+    document.querySelectorAll('.rss-source-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        localRssFeeds.splice(idx, 1);
+        const listEl = document.querySelector('.rss-source-list');
+        if (listEl) listEl.outerHTML = renderRssSourceList();
+        bindRssDeleteBtns();
+      });
+    });
+  }
+  bindRssDeleteBtns();
+
+  document.getElementById('rssAddBtn').addEventListener('click', () => {
+    const url   = document.getElementById('rssAddUrl').value.trim();
+    const label = document.getElementById('rssAddLabel').value.trim();
+    if (!url.startsWith('https://')) { alert('URL은 https://로 시작해야 합니다'); return; }
+    if (!label) { alert('라벨을 입력해 주세요'); return; }
+    if (localRssFeeds.some(f => f.url === url)) { alert('이미 추가된 URL입니다'); return; }
+    const id = label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+    localRssFeeds.push({ id, label, url });
+    const listEl = document.querySelector('.rss-source-list');
+    if (listEl) listEl.outerHTML = renderRssSourceList();
+    else document.querySelector('.rss-source-add').insertAdjacentHTML('beforebegin', renderRssSourceList());
+    document.getElementById('rssAddUrl').value = '';
+    document.getElementById('rssAddLabel').value = '';
+    bindRssDeleteBtns();
+  });
+
   document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
   document.getElementById('projSettingsCloseBtn').addEventListener('click', () => setMode('edit'));
 }
@@ -2094,6 +2151,7 @@ async function saveProjectSettings() {
     color: document.getElementById('projColorHex').value.trim() || ch.color,
     news_keywords: keywords,
     ai_system_prompt: document.getElementById('projSystemPrompt').value.trim() || null,
+    rss_feeds: localRssFeeds,
   };
   try {
     await dbUpsertChannel(updates);
