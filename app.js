@@ -10,6 +10,7 @@ const state = {
   outroPosX: 50,
   outroPosY: 50,
   selectedDragKey: null,
+  viewingOutro: false,
   activePresetId: null,
   appMode: 'edit',
   canvasH: 1350,
@@ -638,7 +639,7 @@ function renderFilmstrip() {
   + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '')
   + (() => {
     const ou = getChannelOutro();
-    return ou ? `<div class="filmstrip-item filmstrip-item--outro">
+    return ou ? `<div class="filmstrip-item filmstrip-item--outro ${state.viewingOutro ? 'active' : ''}">
       <div class="filmstrip-thumb">
         <div class="filmstrip-preview-wrap">
           <div class="filmstrip-preview" style="background-image:url(${ou});background-size:cover;background-position:center;"></div>
@@ -656,15 +657,26 @@ function renderFilmstrip() {
     }
   });
 
-  filmstrip.querySelectorAll('.filmstrip-item').forEach(item => {
+  filmstrip.querySelectorAll('.filmstrip-item[data-index]').forEach(item => {
     item.addEventListener('click', () => {
       state.selectedDragKey = null;
+      state.viewingOutro = false;
       state.slideIndex = parseInt(item.dataset.index);
       renderFilmstrip();
       renderEditor();
       renderCanvas();
     });
   });
+
+  const outroItem = filmstrip.querySelector('.filmstrip-item--outro');
+  if (outroItem) {
+    outroItem.addEventListener('click', () => {
+      state.viewingOutro = true;
+      state.selectedDragKey = null;
+      renderFilmstrip();
+      renderCanvas();
+    });
+  }
 
   let filmstripDragSrc = null;
   filmstrip.querySelectorAll('.filmstrip-item[draggable]').forEach(item => {
@@ -728,9 +740,16 @@ function scaleCanvas() {
 }
 
 function renderCanvas() {
-  const template = getTemplate(state.templateId);
   const canvas = document.getElementById('canvas');
   canvas.style.backgroundImage = 'none';
+  if (state.viewingOutro) {
+    const ou = getChannelOutro();
+    canvas.innerHTML = ou
+      ? `<div style="position:absolute;inset:0;background-image:url(${ou});background-size:cover;background-position:center;"></div>`
+      : `<div style="position:absolute;inset:0;background:#111;display:flex;align-items:center;justify-content:center;font-size:14px;color:#444;">아웃트로 없음</div>`;
+    return;
+  }
+  const template = getTemplate(state.templateId);
   const slideState = state.slides[Math.min(state.slideIndex, state.slides.length - 1)] || {};
   canvas.innerHTML = buildBgHtml(slideState) + template.render(slideState, state.slideIndex, state.slides.length);
   applyDragOffsets(canvas, slideState);

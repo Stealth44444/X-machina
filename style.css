@@ -637,7 +637,7 @@ body {
 }
 
 .filmstrip-item--outro {
-  cursor: default;
+  cursor: pointer;
   opacity: 0.6;
 }
 
@@ -646,12 +646,22 @@ body {
   border-style: dashed;
 }
 
-.filmstrip-item--outro:hover .filmstrip-preview-wrap {
-  border-color: #444;
+.filmstrip-item--outro:hover .filmstrip-preview-wrap,
+.filmstrip-item--outro.active .filmstrip-preview-wrap {
+  border-color: #ffffff;
+  border-style: solid;
+}
+
+.filmstrip-item--outro.active {
+  opacity: 1;
 }
 
 .filmstrip-item--outro .filmstrip-num {
   color: #333;
+}
+
+.filmstrip-item--outro.active .filmstrip-num {
+  color: #ffffff;
 }
 
 .filmstrip-item.drag-over .filmstrip-preview-wrap {
