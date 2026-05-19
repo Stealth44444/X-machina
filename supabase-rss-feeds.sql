@@ -73,5 +73,5 @@ UPDATE channels SET rss_feeds = '[
   {"id":"voguekorea",   "label":"Vogue Korea",         "url":"https://www.vogue.co.kr/feed"},
   {"id":"fashionista",  "label":"Fashionista",         "url":"https://fashionista.com/feed"},
   {"id":"elle",         "label":"Elle",                "url":"https://www.elle.com/rss/all.xml/"},
-  {"id":"harpers",      "label":"Harper'\''s Bazaar",  "url":"https://www.harpersbazaar.com/rss/all.xml/"}
+  {"id":"harpers",      "label":"Harpers Bazaar",      "url":"https://www.harpersbazaar.com/rss/all.xml/"}
 ]'::jsonb WHERE name = 'obscurelife.kr';
