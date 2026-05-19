@@ -908,39 +908,50 @@ body {
 .ai-tone-btn.active { border-color: #ffffff; color: #ffffff; background: rgba(255,255,255,0.05); }
 /* AI 모달 — 동적 채널별 옵션 */
 .ai-option-group {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 7px 0;
+  border-bottom: 1px solid #111;
+}
+.ai-option-group:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
 }
 .ai-option-label {
-  display: block;
-  font-size: 11px;
-  color: #555;
+  flex-shrink: 0;
+  width: 36px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #444;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 6px;
+  letter-spacing: 1.5px;
 }
 .ai-opt-btns {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
+  flex: 1;
 }
 .ai-opt-btn {
-  padding: 6px 12px;
-  border: 1px solid #222;
-  background: #111;
-  color: #666;
+  padding: 5px 10px;
+  border: 1px solid #1a1a1a;
+  background: transparent;
+  color: #555;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-family: inherit;
   transition: border-color 0.15s, color 0.15s;
 }
 .ai-opt-btn.active {
   border-color: #fff;
   color: #e8e8e8;
+  background: rgba(255,255,255,0.04);
 }
 .ai-opt-btn:hover:not(.active) {
-  border-color: #333;
-  color: #aaa;
+  border-color: #2a2a2a;
+  color: #999;
 }
 .ai-count-btn {
   flex: 1; padding: 7px 0; background: none; border: 1px solid #222;
