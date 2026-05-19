@@ -3,6 +3,8 @@
 -- 실행 전: 채널 이름이 정확히 일치하는지 확인
 -- SELECT name FROM channels;
 
+BEGIN;
+
 -- ============================================================
 -- spacelog
 -- ============================================================
@@ -143,7 +145,9 @@ UFC를 진지하게 보는 사람부터 격투기를 막 접한 사람까지. "�
 $$
 WHERE name = 'mma_seoul';
 
+COMMIT;
+
 -- 업데이트 확인
-SELECT name, description, LEFT(ai_system_prompt, 50) AS prompt_preview
+SELECT name, description, LEFT(ai_system_prompt, 100) AS prompt_preview
 FROM channels
 ORDER BY created_at;
