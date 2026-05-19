@@ -55,6 +55,19 @@ function getTemplate(id) {
   return window.GYMSPIRE_TEMPLATES.find(t => t.id === id);
 }
 
+const CHANNEL_OUTROS = {
+  'CAPITALFLOW':     '/outro/capitalflow.png',
+  'spacelog':        '/outro/spacelog.png',
+  'mma_seoul':       '/outro/mma_seoul.png',
+  'Nightcall.audio': '/outro/nightcall.png',
+  'obscurelife.kr':  '/outro/obscurelife.png',
+};
+
+function getChannelOutro() {
+  const ch = (state.channels || []).find(c => c.id === state.projectId);
+  return ch ? (CHANNEL_OUTROS[ch.name] || null) : null;
+}
+
 window.outroSlide = function() {
   const ch = (typeof state !== 'undefined' && state.channels && state.channels.find(c => c.id === state.projectId)) || { name: 'CHANNEL', description: '팔로우하고 더 많은 소식을 받아보세요' };
   return `
@@ -298,6 +311,11 @@ async function renderSlidesToUrls() {
     canvas.style.top = prevTop;
     canvas.style.transform = prevTransform;
     renderCanvas();
+  }
+
+  const outroPath = getChannelOutro();
+  if (outroPath) {
+    urls.push(`${location.origin}${outroPath}`);
   }
 
   return urls;
@@ -617,7 +635,18 @@ function renderFilmstrip() {
       </div>
     `;
   }).join('')
-  + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '');
+  + (state.slides.length < maxSlides ? `<button class="filmstrip-add" id="addSlideBtn">+</button>` : '')
+  + (() => {
+    const ou = getChannelOutro();
+    return ou ? `<div class="filmstrip-item filmstrip-item--outro">
+      <div class="filmstrip-thumb">
+        <div class="filmstrip-preview-wrap">
+          <div class="filmstrip-preview" style="background-image:url(${ou});background-size:cover;background-position:center;"></div>
+        </div>
+      </div>
+      <span class="filmstrip-num">아웃트로</span>
+    </div>` : '';
+  })();
 
   state.slides.forEach((slideState, i) => {
     const previews = filmstrip.querySelectorAll('.filmstrip-preview');

@@ -636,6 +636,24 @@ body {
   opacity: 0.35;
 }
 
+.filmstrip-item--outro {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.filmstrip-item--outro .filmstrip-preview-wrap {
+  border-color: #222;
+  border-style: dashed;
+}
+
+.filmstrip-item--outro:hover .filmstrip-preview-wrap {
+  border-color: #444;
+}
+
+.filmstrip-item--outro .filmstrip-num {
+  color: #333;
+}
+
 .filmstrip-item.drag-over .filmstrip-preview-wrap {
   border-color: #ffffff;
   box-shadow: 0 0 0 2px #ffffff;
