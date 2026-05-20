@@ -91,12 +91,7 @@ function renderQueueTab() {
   if (visibleChannels.length === 0) {
     return '<div class="dash-canvas"><div class="dash-no-channels">채널을 선택하세요</div></div>';
   }
-  const topRow = visibleChannels.slice(0, 3);
-  const botRow = visibleChannels.slice(3);
-  return `<div class="dash-canvas">
-    <div class="dash-canvas-row">${topRow.map(ch => renderChannelColumn(ch)).join('')}</div>
-    ${botRow.length > 0 ? `<div class="dash-canvas-row dash-canvas-row--center">${botRow.map(ch => renderChannelColumn(ch)).join('')}</div>` : ''}
-  </div>`;
+  return `<div class="dash-canvas">${visibleChannels.map(ch => renderChannelColumn(ch)).join('')}</div>`;
 }
 
 function renderChannelColumn(ch) {
@@ -105,20 +100,18 @@ function renderChannelColumn(ch) {
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
 
   const nextPost = allPosts[0] || null;
+  const EMPTY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="5"><rect width="4" height="5" fill="%23111"/></svg>';
 
-  let inner = '';
-  if (nextPost) {
-    const isSched = nextPost.status === 'scheduled';
-    const timeStr = isSched && nextPost.scheduled_at
-      ? new Date(nextPost.scheduled_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+  const postsHtml = allPosts.map(post => {
+    const isSched = post.status === 'scheduled';
+    const timeStr = isSched && post.scheduled_at
+      ? new Date(post.scheduled_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
       : '';
-    const EMPTY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="5"><rect width="4" height="5" fill="%23111"/></svg>';
-    const thumbUrl = nextPost.thumbnail_url || (nextPost.slide_images && nextPost.slide_images[0]) || EMPTY;
-    const slideCount = (nextPost.slide_images && nextPost.slide_images.length) || 0;
-    const hasStack = slideCount > 1;
+    const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || EMPTY;
+    const slideCount = (post.slide_images && post.slide_images.length) || 0;
 
-    inner = `
-      <div class="dash-thumb-stack" data-post-id="${nextPost.id}">
+    return `
+      <div class="dash-thumb-stack" data-post-id="${post.id}">
         <div class="dash-post-thumb-wrap">
           <img src="${thumbUrl}" alt="" class="dash-post-thumb">
         </div>
@@ -128,20 +121,17 @@ function renderChannelColumn(ch) {
               <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
               ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
             </div>
-            ${isSched ? `<button class="dash-cancel-btn" data-post-id="${nextPost.id}">취소</button>` : ''}
           </div>
         </div>
         ${slideCount > 1 ? `
-          <div class="dash-slide-nav" data-post-id="${nextPost.id}">
+          <div class="dash-slide-nav" data-post-id="${post.id}">
             <button class="dash-slide-arrow" data-dir="-1">&#8249;</button>
             <button class="dash-slide-arrow" data-dir="1">&#8250;</button>
           </div>
         ` : ''}
       </div>
     `;
-  } else {
-    inner = '';
-  }
+  }).join('');
 
   return `
     <div class="dash-frame" data-channel-id="${ch.id}">
@@ -153,10 +143,11 @@ function renderChannelColumn(ch) {
             <button class="dash-post-btn dash-post-btn--done" data-post-id="${nextPost.id}">완료</button>
             <button class="dash-post-btn dash-post-btn--edit" data-post-id="${nextPost.id}" data-channel-id="${nextPost.channel_id}">편집</button>
             <button class="dash-post-btn dash-post-btn--download" data-post-id="${nextPost.id}">저장</button>
+            <button class="dash-cancel-btn" data-post-id="${nextPost.id}">취소</button>
           </div>
         ` : ''}
       </div>
-      ${inner}
+      ${allPosts.length > 0 ? `<div class="dash-posts-row">${postsHtml}</div>` : ''}
     </div>
   `;
 }
