@@ -2496,13 +2496,6 @@ body {
 }
 .dash-thumb-ui-actions .dash-post-btn:hover { border-color: rgba(255,255,255,0.3); color: #fff; background: rgba(0,0,0,0.9); }
 
-/* ── Frame empty state ───────────────────────────────────────────────────── */
-.dash-frame-empty {
-  aspect-ratio: 4 / 5; width: 100%;
-  border: 1px dashed #222; border-radius: 8px;
-  background: #0d0d0d;
-}
-
 /* ── Slide arrow navigation ──────────────────────────────────────────────── */
 .dash-slide-nav {
   position: absolute; inset: 0; z-index: 5;
@@ -2521,11 +2514,6 @@ body {
 }
 .dash-thumb-stack:hover .dash-slide-arrow { opacity: 1; }
 .dash-slide-arrow:hover { background: rgba(0,0,0,0.85); border-color: rgba(255,255,255,0.25); }
-.dash-slide-counter {
-  font-size: 9px; color: rgba(255,255,255,0.45); letter-spacing: 0.3px;
-  background: rgba(0,0,0,0.6); padding: 2px 7px; border-radius: 3px;
-  pointer-events: none;
-}
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 .dash-tabs {

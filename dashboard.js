@@ -101,14 +101,8 @@ function renderQueueTab() {
 
 function renderChannelColumn(ch) {
   const allPosts = dashState.posts
-    .filter(p => p.channel_id === ch.id && p.status !== 'published')
-    .sort((a, b) => {
-      if (a.status === 'scheduled' && b.status !== 'scheduled') return -1;
-      if (b.status === 'scheduled' && a.status !== 'scheduled') return 1;
-      if (a.status === 'scheduled' && b.status === 'scheduled')
-        return new Date(a.scheduled_at) - new Date(b.scheduled_at);
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
+    .filter(p => p.channel_id === ch.id && p.status === 'scheduled')
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
 
   const nextPost = allPosts[0] || null;
 
@@ -140,14 +134,13 @@ function renderChannelColumn(ch) {
         ${slideCount > 1 ? `
           <div class="dash-slide-nav" data-post-id="${nextPost.id}">
             <button class="dash-slide-arrow" data-dir="-1">&#8249;</button>
-            <span class="dash-slide-counter">1 / ${slideCount}</span>
             <button class="dash-slide-arrow" data-dir="1">&#8250;</button>
           </div>
         ` : ''}
       </div>
     `;
   } else {
-    inner = '<div class="dash-frame-empty"></div>';
+    inner = '';
   }
 
   return `
@@ -428,8 +421,6 @@ function navigateSlide(postId, dir) {
   dashState.slideIndexes.set(postId, next);
   const img = document.querySelector(`.dash-thumb-stack[data-post-id="${postId}"] .dash-post-thumb`);
   if (img) img.src = post.slide_images[next];
-  const counter = document.querySelector(`.dash-slide-nav[data-post-id="${postId}"] .dash-slide-counter`);
-  if (counter) counter.textContent = `${next + 1} / ${total}`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────
