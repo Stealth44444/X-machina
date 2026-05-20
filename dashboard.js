@@ -91,7 +91,8 @@ function renderDashboard() {
 
 function renderQueueTab() {
   const visibleChannels = dashState.channels.filter(ch => !dashState.hiddenChannels.has(ch.id));
-  return `<div class="dash-queue-columns">
+  const gridClass = visibleChannels.length === 5 ? ' dash-queue-columns--grid32' : '';
+  return `<div class="dash-queue-columns${gridClass}">
     ${visibleChannels.length === 0
       ? '<div class="dash-no-channels">채널을 선택하세요</div>'
       : visibleChannels.map(ch => renderChannelColumn(ch)).join('')}
@@ -166,23 +167,32 @@ function renderPostCard(post) {
     : '';
   const EMPTY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="5"><rect width="4" height="5" fill="%23111"/></svg>';
   const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || EMPTY;
+  const slideCount = (post.slide_images && post.slide_images.length) || 0;
+  const hasStack = slideCount > 1;
 
   return `
-    <div class="dash-post-card">
-      <div class="dash-post-top">
-        <div class="dash-post-status-row">
-          <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
-          ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
+    <div class="dash-post-card-wrap">
+      ${hasStack ? `
+        <div class="dash-stack-layer dash-stack-layer--back"></div>
+        <div class="dash-stack-layer dash-stack-layer--mid"></div>
+      ` : ''}
+      <div class="dash-post-card">
+        <div class="dash-post-top">
+          <div class="dash-post-status-row">
+            <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
+            ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
+          </div>
+          ${isSched ? `<button class="dash-cancel-btn" data-post-id="${post.id}">취소</button>` : ''}
         </div>
-        ${isSched ? `<button class="dash-cancel-btn" data-post-id="${post.id}">취소</button>` : ''}
-      </div>
-      <div class="dash-post-thumb-wrap" data-post-id="${post.id}">
-        <img src="${thumbUrl}" alt="" class="dash-post-thumb">
-      </div>
-      <div class="dash-post-actions">
-        <button class="dash-post-btn dash-post-btn--done" data-post-id="${post.id}">업로드 완료</button>
-        <button class="dash-post-btn dash-post-btn--edit" data-post-id="${post.id}" data-channel-id="${post.channel_id}">편집</button>
-        <button class="dash-post-btn dash-post-btn--download" data-post-id="${post.id}">저장</button>
+        <div class="dash-post-thumb-wrap" data-post-id="${post.id}">
+          <img src="${thumbUrl}" alt="" class="dash-post-thumb">
+          ${slideCount > 1 ? `<span class="dash-slide-badge">${slideCount}장</span>` : ''}
+        </div>
+        <div class="dash-post-actions">
+          <button class="dash-post-btn dash-post-btn--done" data-post-id="${post.id}">업로드 완료</button>
+          <button class="dash-post-btn dash-post-btn--edit" data-post-id="${post.id}" data-channel-id="${post.channel_id}">편집</button>
+          <button class="dash-post-btn dash-post-btn--download" data-post-id="${post.id}">저장</button>
+        </div>
       </div>
     </div>
   `;
