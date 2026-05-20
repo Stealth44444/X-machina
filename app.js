@@ -2254,8 +2254,13 @@ function renderProjectSettings() {
             </div>
             <button class="news-refresh-btn" id="projSettingsCloseBtn">나가기</button>
           </div>
+          <div class="proj-tab-toggle">
+            <button class="proj-tab-btn active" data-tab="channel">채널 설정</button>
+            <button class="proj-tab-btn" data-tab="principles">공통 원칙</button>
+          </div>
         </div>
-        <div class="proj-settings-body">
+
+        <div class="proj-settings-body" id="projTabChannel">
           <div class="ch-field">
             <label class="ch-label">채널 이름</label>
             <input class="ch-input" id="projName" type="text" value="${escHtml(ch.name || '')}">
@@ -2273,7 +2278,7 @@ function renderProjectSettings() {
           <div class="ch-field">
             <label class="ch-label">AI 시스템 프롬프트 <span class="ch-optional">선택</span></label>
             <p class="ch-hint">비워두면 기본 프롬프트 사용. 입력 시 완전 대체.</p>
-            <textarea class="ch-input ch-textarea" id="projSystemPrompt" rows="5">${escHtml(ch.ai_system_prompt || '')}</textarea>
+            <textarea class="ch-input ch-textarea" id="projSystemPrompt" rows="8">${escHtml(ch.ai_system_prompt || '')}</textarea>
           </div>
           <div class="ch-field ch-field--row">
             <div class="ch-field-inner">
@@ -2286,15 +2291,18 @@ function renderProjectSettings() {
             </div>
           </div>
         </div>
-          <div class="ch-field" style="margin-top:32px;padding-top:32px;border-top:1px solid #1a1a1a;">
+
+        <div class="proj-settings-body" id="projTabPrinciples" style="display:none">
+          <div class="ch-field">
             <label class="ch-label">공통 카피라이팅 원칙</label>
             <p class="ch-hint">모든 채널 AI 생성에 공통 적용됩니다. 비워두면 기본값 사용.</p>
-            <textarea class="ch-input ch-textarea" id="projCopyPrinciples" rows="18" style="font-size:11px;line-height:1.6;font-family:monospace;">${escHtml(localStorage.getItem('xmachina_copy_principles') || DEFAULT_COPY_PRINCIPLES)}</textarea>
-            <div style="display:flex;gap:8px;margin-top:8px;">
-              <button class="ch-btn" id="projResetPrinciplesBtn" style="font-size:11px;padding:6px 12px;">기본값으로 초기화</button>
-            </div>
+            <textarea class="ch-input ch-textarea" id="projCopyPrinciples" rows="20" style="font-size:11px;line-height:1.7;font-family:monospace;">${escHtml(localStorage.getItem('xmachina_copy_principles') || DEFAULT_COPY_PRINCIPLES)}</textarea>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="ch-btn" id="projResetPrinciplesBtn">기본값 초기화</button>
           </div>
         </div>
+
         <div class="proj-settings-footer">
           <span class="proj-save-status" id="projSaveStatus"></span>
           <button class="ch-btn ch-btn--primary" id="projSaveBtn">저장</button>
@@ -2302,6 +2310,15 @@ function renderProjectSettings() {
       </div>
     </div>`;
 
+  document.querySelectorAll('.proj-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.proj-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('projTabChannel').style.display = tab === 'channel' ? '' : 'none';
+      document.getElementById('projTabPrinciples').style.display = tab === 'principles' ? '' : 'none';
+    });
+  });
   const colorInput = document.getElementById('projColor');
   const colorHex = document.getElementById('projColorHex');
   colorInput.addEventListener('input', () => { colorHex.value = colorInput.value; });
