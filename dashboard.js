@@ -91,11 +91,14 @@ function renderDashboard() {
 
 function renderQueueTab() {
   const visibleChannels = dashState.channels.filter(ch => !dashState.hiddenChannels.has(ch.id));
-  const gridClass = visibleChannels.length === 5 ? ' dash-queue-columns--grid32' : '';
-  return `<div class="dash-queue-columns${gridClass}">
-    ${visibleChannels.length === 0
-      ? '<div class="dash-no-channels">채널을 선택하세요</div>'
-      : visibleChannels.map(ch => renderChannelColumn(ch)).join('')}
+  if (visibleChannels.length === 0) {
+    return '<div class="dash-canvas"><div class="dash-no-channels">채널을 선택하세요</div></div>';
+  }
+  const topRow = visibleChannels.slice(0, 3);
+  const botRow = visibleChannels.slice(3);
+  return `<div class="dash-canvas">
+    <div class="dash-canvas-row">${topRow.map(ch => renderChannelColumn(ch)).join('')}</div>
+    ${botRow.length > 0 ? `<div class="dash-canvas-row dash-canvas-row--center">${botRow.map(ch => renderChannelColumn(ch)).join('')}</div>` : ''}
   </div>`;
 }
 
@@ -137,24 +140,18 @@ function renderChannelColumn(ch) {
     </div>`;
   }
 
-  const total = allPosts.length;
   return `
-    <div class="dash-col" data-channel-id="${ch.id}">
-      <div class="dash-col-header" style="border-top-color:${ch.color}">
-        <div class="dash-col-title-row">
-          <div class="dash-col-name-wrap">
-            <span class="dash-col-name">${escSafe(ch.name)}</span>
-            ${todayCount > 0 ? `<span class="dash-col-today">${todayCount}</span>` : ''}
-          </div>
+    <div class="dash-frame" data-channel-id="${ch.id}">
+      <div class="dash-frame-label">
+        <span class="dash-frame-dot" style="background:${ch.color}"></span>
+        <span class="dash-frame-name">${escSafe(ch.name)}</span>
+        <div class="dash-frame-meta">
+          ${todayCount > 0 ? `<span class="dash-frame-today">${todayCount}</span>` : ''}
           <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
         </div>
-        ${total > 0 ? `<div class="dash-col-stats">총 ${total}건</div>` : ''}
       </div>
-      <div class="dash-col-body">
+      <div class="dash-frame-body">
         ${bodyHtml || '<div class="dash-col-empty">대기 중인 포스트 없음</div>'}
-      </div>
-      <div class="dash-col-footer">
-        <button class="dash-new-btn" data-channel-id="${ch.id}">새 포스트</button>
       </div>
     </div>
   `;
