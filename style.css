@@ -2302,14 +2302,15 @@ body {
 }
 .dash-col-empty { padding: 24px 8px; text-align: center; color: #333; font-size: 11px; }
 .dash-post-card {
-  position: relative; z-index: 2;
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
   background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 5px;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 .dash-post-card:hover { border-color: #222; }
 .dash-post-top {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 5px; flex-shrink: 0;
 }
 .dash-status {
   font-size: 9px; font-weight: 700; letter-spacing: 1px;
@@ -2323,7 +2324,7 @@ body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   line-height: 1.4;
 }
-.dash-post-actions { display: flex; gap: 6px; }
+.dash-post-actions { display: flex; gap: 5px; flex-shrink: 0; margin-top: 6px; }
 .dash-post-btn {
   padding: 4px 10px; background: transparent; border: 1px solid #1e1e1e; border-radius: 3px;
   color: #666; font-size: 10px; cursor: pointer;
@@ -2385,11 +2386,11 @@ body {
 .dash-col-stats { font-size: 9px; color: #333; letter-spacing: 0.3px; margin-top: 4px; }
 
 /* ── Date group dividers ─────────────────────────────────────────────────── */
-.dash-date-group { margin-bottom: 4px; }
+.dash-date-group { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
 .dash-date-divider {
   font-size: 9px; font-weight: 700; color: #333; letter-spacing: 1.2px;
-  padding: 6px 0 5px; border-bottom: 1px solid #111; margin-bottom: 5px;
-  text-transform: uppercase;
+  padding: 4px 0; border-bottom: 1px solid #111; margin-bottom: 5px;
+  text-transform: uppercase; flex-shrink: 0;
 }
 .dash-date-divider.is-today { color: #e8e8e8; border-bottom-color: #1e1e1e; }
 .dash-date-divider.is-draft { color: #2a2a2a; }
@@ -2414,24 +2415,24 @@ body {
 
 /* ── Figma-style canvas + frame layout ──────────────────────────────────── */
 .dash-canvas {
-  flex: 1; overflow-y: auto;
-  padding: 28px 32px 48px;
-  display: flex; flex-direction: column; gap: 20px;
+  flex: 1; min-height: 0; overflow: hidden;
+  padding: 20px 28px;
+  display: flex; flex-direction: column; gap: 14px;
   background: #060606;
-  min-height: 0;
 }
 .dash-canvas-row {
-  display: flex; gap: 16px; align-items: flex-start;
+  display: flex; gap: 12px; align-items: stretch;
+  flex: 1; min-height: 0;
 }
 .dash-canvas-row--center { justify-content: center; }
 .dash-frame {
-  flex: 0 1 calc(33.333% - 11px);
-  min-width: 200px;
+  flex: 1; min-height: 0;
+  max-width: calc((100% - 24px) / 3);
   display: flex; flex-direction: column;
 }
 .dash-frame-label {
   display: flex; align-items: center; gap: 7px;
-  padding: 0 4px 8px;
+  padding: 0 4px 7px; flex-shrink: 0;
 }
 .dash-frame-dot {
   width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
@@ -2449,29 +2450,45 @@ body {
   padding: 1px 6px; border-radius: 3px; letter-spacing: 0.3px;
 }
 .dash-frame-body {
+  flex: 1; min-height: 0; overflow: hidden;
   background: #0a0a0a; border: 1px solid #151515; border-radius: 8px;
-  padding: 12px; display: flex; flex-direction: column; gap: 10px;
-  min-height: 80px; max-height: 62vh; overflow-y: auto;
+  padding: 10px; display: flex; flex-direction: column; gap: 8px;
 }
 
-/* ── Stacked card wrapper ────────────────────────────────────────────────── */
-.dash-post-card-wrap {
-  position: relative; padding-bottom: 10px;
+/* ── Thumb stack (slide deck effect) ────────────────────────────────────── */
+.dash-thumb-stack {
+  flex: 1; min-height: 0;
+  position: relative;
+  cursor: pointer;
 }
-.dash-stack-layer {
-  position: absolute; bottom: 0; left: 50%;
-  border-radius: 5px; border: 1px solid #161616;
+.dash-thumb-layer {
+  position: absolute; inset: 0;
+  border-radius: 5px; border: 1px solid;
+  transition: transform 0.25s ease;
+  will-change: transform;
 }
-.dash-stack-layer--back {
-  width: 86%; height: 10px;
-  transform: translateX(-50%);
-  background: #070707; z-index: 0;
+.dash-thumb-layer--back {
+  background: #070707; border-color: #1c1c1c;
+  transform: rotate(-2deg) scale(0.955);
+  z-index: 0;
 }
-.dash-stack-layer--mid {
-  width: 93%; height: 6px;
-  transform: translateX(-50%);
-  background: #0a0a0a; z-index: 1;
+.dash-thumb-layer--mid {
+  background: #0b0b0b; border-color: #161616;
+  transform: rotate(1.2deg) scale(0.977);
+  z-index: 1;
 }
+.dash-thumb-stack:hover .dash-thumb-layer--back { transform: rotate(-3deg) scale(0.955); }
+.dash-thumb-stack:hover .dash-thumb-layer--mid  { transform: rotate(1.8deg) scale(0.977); }
+.dash-post-thumb-wrap {
+  position: absolute; inset: 0;
+  background: #000; border-radius: 5px; overflow: hidden;
+  border: 1px solid #1a1a1a; z-index: 2;
+}
+.dash-post-thumb {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.dash-thumb-stack:hover .dash-post-thumb { transform: scale(1.03); }
 
 /* ── Slide count badge ───────────────────────────────────────────────────── */
 .dash-slide-badge {
@@ -2674,16 +2691,6 @@ body {
 .ch-btn--danger:hover { border-color: #a04040; color: #e05050; }
 
 /* ── Post card enhancements ───────────────────────────────────────────────── */
-.dash-post-thumb-wrap {
-  position: relative; width: 100%; aspect-ratio: 4/5;
-  background: #000; border-radius: 4px; overflow: hidden;
-  margin-bottom: 8px; cursor: pointer; border: 1px solid #1a1a1a;
-}
-.dash-post-thumb {
-  width: 100%; height: 100%; object-fit: cover;
-  transition: transform 0.3s ease;
-}
-.dash-post-thumb-wrap:hover .dash-post-thumb { transform: scale(1.03); }
 .dash-post-caption-wrap {
   position: relative; margin-bottom: 8px;
 }

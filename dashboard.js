@@ -168,28 +168,25 @@ function renderPostCard(post) {
   const hasStack = slideCount > 1;
 
   return `
-    <div class="dash-post-card-wrap">
-      ${hasStack ? `
-        <div class="dash-stack-layer dash-stack-layer--back"></div>
-        <div class="dash-stack-layer dash-stack-layer--mid"></div>
-      ` : ''}
-      <div class="dash-post-card">
-        <div class="dash-post-top">
-          <div class="dash-post-status-row">
-            <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
-            ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
-          </div>
-          ${isSched ? `<button class="dash-cancel-btn" data-post-id="${post.id}">취소</button>` : ''}
+    <div class="dash-post-card">
+      <div class="dash-post-top">
+        <div class="dash-post-status-row">
+          <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
+          ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
         </div>
-        <div class="dash-post-thumb-wrap" data-post-id="${post.id}">
+        ${isSched ? `<button class="dash-cancel-btn" data-post-id="${post.id}">취소</button>` : ''}
+      </div>
+      <div class="dash-thumb-stack" data-post-id="${post.id}">
+        ${hasStack ? `<div class="dash-thumb-layer dash-thumb-layer--back"></div><div class="dash-thumb-layer dash-thumb-layer--mid"></div>` : ''}
+        <div class="dash-post-thumb-wrap">
           <img src="${thumbUrl}" alt="" class="dash-post-thumb">
           ${slideCount > 1 ? `<span class="dash-slide-badge">${slideCount}장</span>` : ''}
         </div>
-        <div class="dash-post-actions">
-          <button class="dash-post-btn dash-post-btn--done" data-post-id="${post.id}">업로드 완료</button>
-          <button class="dash-post-btn dash-post-btn--edit" data-post-id="${post.id}" data-channel-id="${post.channel_id}">편집</button>
-          <button class="dash-post-btn dash-post-btn--download" data-post-id="${post.id}">저장</button>
-        </div>
+      </div>
+      <div class="dash-post-actions">
+        <button class="dash-post-btn dash-post-btn--done" data-post-id="${post.id}">업로드 완료</button>
+        <button class="dash-post-btn dash-post-btn--edit" data-post-id="${post.id}" data-channel-id="${post.channel_id}">편집</button>
+        <button class="dash-post-btn dash-post-btn--download" data-post-id="${post.id}">저장</button>
       </div>
     </div>
   `;
@@ -361,7 +358,7 @@ function bindDashboardEvents() {
     btn.addEventListener('click', () => openPostInEditor(btn.dataset.postId, btn.dataset.channelId));
   });
 
-  document.querySelectorAll('.dash-post-thumb-wrap').forEach(el => {
+  document.querySelectorAll('.dash-thumb-stack').forEach(el => {
     el.addEventListener('click', () => openLightbox(el.dataset.postId));
   });
 
