@@ -113,31 +113,50 @@ function renderChannelColumn(ch) {
       return new Date(b.created_at) - new Date(a.created_at);
     });
 
-  const scheduled = allPosts.filter(p => p.status === 'scheduled');
-  const unscheduled = allPosts.filter(p => p.status !== 'scheduled');
   const today = new Date();
-  const todayCount = scheduled.filter(p => isSameDay(new Date(p.scheduled_at), today)).length;
+  const todayCount = allPosts.filter(p => p.status === 'scheduled' && isSameDay(new Date(p.scheduled_at), today)).length;
+  const nextPost = allPosts[0] || null;
+  const extraCount = allPosts.length - 1;
 
-  const dateGroupMap = new Map();
-  const dateGroupOrder = [];
-  for (const post of scheduled) {
-    const label = getDateLabel(post.scheduled_at);
-    if (!dateGroupMap.has(label)) { dateGroupMap.set(label, []); dateGroupOrder.push(label); }
-    dateGroupMap.get(label).push(post);
-  }
+  let inner = '';
+  if (nextPost) {
+    const isSched = nextPost.status === 'scheduled';
+    const timeStr = isSched && nextPost.scheduled_at
+      ? new Date(nextPost.scheduled_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      : '';
+    const EMPTY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="5"><rect width="4" height="5" fill="%23111"/></svg>';
+    const thumbUrl = nextPost.thumbnail_url || (nextPost.slide_images && nextPost.slide_images[0]) || EMPTY;
+    const slideCount = (nextPost.slide_images && nextPost.slide_images.length) || 0;
+    const hasStack = slideCount > 1;
 
-  let bodyHtml = '';
-  for (const label of dateGroupOrder) {
-    bodyHtml += `<div class="dash-date-group">
-      <div class="dash-date-divider${label === '오늘' ? ' is-today' : ''}">${label}</div>
-      ${dateGroupMap.get(label).map(p => renderPostCard(p)).join('')}
-    </div>`;
-  }
-  if (unscheduled.length > 0) {
-    bodyHtml += `<div class="dash-date-group">
-      <div class="dash-date-divider is-draft">날짜 미설정</div>
-      ${unscheduled.map(p => renderPostCard(p)).join('')}
-    </div>`;
+    inner = `
+      <div class="dash-thumb-stack" data-post-id="${nextPost.id}">
+        ${hasStack ? '<div class="dash-thumb-layer dash-thumb-layer--back"></div><div class="dash-thumb-layer dash-thumb-layer--mid"></div>' : ''}
+        <div class="dash-post-thumb-wrap">
+          <img src="${thumbUrl}" alt="" class="dash-post-thumb">
+        </div>
+        <div class="dash-thumb-ui">
+          <div class="dash-thumb-ui-top">
+            <div class="dash-thumb-ui-status">
+              <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
+              ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
+              ${extraCount > 0 ? `<span class="dash-frame-extra">+${extraCount}</span>` : ''}
+            </div>
+            ${isSched ? `<button class="dash-cancel-btn" data-post-id="${nextPost.id}">취소</button>` : ''}
+          </div>
+          <div class="dash-thumb-ui-bottom">
+            ${slideCount > 1 ? `<span class="dash-slide-badge">${slideCount}장</span>` : ''}
+            <div class="dash-thumb-ui-actions">
+              <button class="dash-post-btn dash-post-btn--done" data-post-id="${nextPost.id}">업로드 완료</button>
+              <button class="dash-post-btn dash-post-btn--edit" data-post-id="${nextPost.id}" data-channel-id="${nextPost.channel_id}">편집</button>
+              <button class="dash-post-btn dash-post-btn--download" data-post-id="${nextPost.id}">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    inner = '<div class="dash-frame-empty">대기 없음</div>';
   }
 
   return `
@@ -150,9 +169,7 @@ function renderChannelColumn(ch) {
           <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
         </div>
       </div>
-      <div class="dash-frame-body">
-        ${bodyHtml || '<div class="dash-col-empty">대기 중인 포스트 없음</div>'}
-      </div>
+      ${inner}
     </div>
   `;
 }
@@ -358,8 +375,12 @@ function bindDashboardEvents() {
     btn.addEventListener('click', () => openPostInEditor(btn.dataset.postId, btn.dataset.channelId));
   });
 
-  document.querySelectorAll('.dash-thumb-stack').forEach(el => {
-    el.addEventListener('click', () => openLightbox(el.dataset.postId));
+  document.querySelectorAll('.dash-post-thumb').forEach(img => {
+    const stack = img.closest('.dash-thumb-stack');
+    img.addEventListener('click', () => openLightbox(stack?.dataset.postId));
+  });
+  document.querySelectorAll('.dash-thumb-ui button').forEach(btn => {
+    btn.addEventListener('click', e => e.stopPropagation());
   });
 
   document.querySelectorAll('.dash-post-btn--download').forEach(btn => {
