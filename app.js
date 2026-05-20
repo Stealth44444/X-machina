@@ -1692,6 +1692,33 @@ function openAiModal() {
   setTimeout(() => document.getElementById('aiKeyword').focus(), 30);
 }
 
+const DEFAULT_COPY_PRINCIPLES = `### title (표지 및 본문 헤드라인)
+- 스크롤을 물리적으로 멈추게 만들어야 함. 10-20자.
+- 숫자·불완전 문장·의문문·반전 모두 허용
+- 절대 금지: 번역체 / "최고의·놀라운·혁신적인·대단한·뛰어난" / 과도한 감탄사 / 빈 수식어
+
+### body (본문)
+- 핵심 메시지 → 배경/근거 → 독자 적용 순서로 흐름
+- 볼드 마크업 필수: 핵심 수치·고유명사·핵심 키워드를 반드시 **단어** 형식으로 표시할 것. 예시: **$1.2조**, **켄드릭 라마**, **2024년 3분기**. 슬라이드당 1~3개 반드시 포함.
+- 짧은 문장 + 긴 문장을 섞어 리듬 생성
+- 줄바꿈 필수: 문장 종결 후 반드시 다음 문장은 새 줄에서 시작
+- 2-3문장마다 빈 줄(\\n\\n)로 단락 구분해 시각적 호흡 제공
+- 각 슬라이드는 독립적으로 읽혀도 가치 있어야 함
+- body 필드에 CTA 문구 절대 금지: 구매·클릭 유도 표현은 "cta" 필드에만 작성
+
+### subtitle / cta
+- subtitle: title을 보완하는 맥락 1줄. 구매 유도 표현 금지.
+- cta 필드가 있는 경우에만 작성.
+
+### 브랜드 특정성
+- 완성된 각 슬라이드를 "이걸 다른 계정 콘텐츠로 바꿔도 말이 되는가?" 자문할 것
+- 된다면 → 이 채널에만 해당하는 사실·수치·이름·에피소드로 다시 쓸 것
+
+### 서사 구조 (필수)
+- 슬라이드 1 (표지): 강한 후킹. 다음 슬라이드가 궁금하게 만듦
+- 슬라이드 2~N-1: 각각 독립된 가치 단위
+- 마지막 슬라이드: 감정·인사이트·여운으로만 마무리. 행동 촉구, 링크, 팔로우 유도 절대 금지.`;
+
 function buildAiPrompt(template, keyword, tone, slideCount, speech, target, newsItems) {
   const slideDescs = Array.from({ length: slideCount }, (_, i) => {
     const keys = (template.fieldsForSlide ? template.fieldsForSlide(i) : template.fields.map(f => f.key))
@@ -1718,36 +1745,12 @@ function buildAiPrompt(template, keyword, tone, slideCount, speech, target, news
 ${AI_SPEECH_GUIDES[speech] || AI_SPEECH_GUIDES.friendly}
 ${AI_TARGET_GUIDES[target] || AI_TARGET_GUIDES.all}`;
 
+  const copyPrinciples = localStorage.getItem('xmachina_copy_principles') || DEFAULT_COPY_PRINCIPLES;
   const systemMsg = `${channelBase}
 
 ## 카피라이팅 원칙
 
-### title (표지 및 본문 헤드라인)
-- 스크롤을 물리적으로 멈추게 만들어야 함. 10-20자.
-- 숫자·불완전 문장·의문문·반전 모두 허용
-- 절대 금지: 번역체 / "최고의·놀라운·혁신적인·대단한·뛰어난" / 과도한 감탄사 / 빈 수식어
-
-### body (본문)
-- 핵심 메시지 → 배경/근거 → 독자 적용 순서로 흐름
-- **볼드**는 핵심 수치·이름·키워드만. 슬라이드당 최대 3개
-- 짧은 문장 + 긴 문장을 섞어 리듬 생성
-- **줄바꿈 필수**: 문장 종결 후 반드시 다음 문장은 새 줄에서 시작
-- 2-3문장마다 빈 줄(\n\n)로 단락 구분해 시각적 호흡 제공
-- 각 슬라이드는 독립적으로 읽혀도 가치 있어야 함
-- **body 필드에 CTA 문구 절대 금지**: 구매·클릭 유도 표현은 "cta" 필드에만 작성
-
-### subtitle / cta
-- subtitle: title을 보완하는 맥락 1줄. 구매 유도 표현 금지.
-- cta 필드가 있는 경우에만 작성.
-
-### 브랜드 특정성
-- 완성된 각 슬라이드를 **"이걸 다른 계정 콘텐츠로 바꿔도 말이 되는가?"** 자문할 것
-- 된다면 → 이 채널에만 해당하는 사실·수치·이름·에피소드로 다시 쓸 것
-
-### 서사 구조 (필수)
-- 슬라이드 1 (표지): 강한 후킹. 다음 슬라이드가 궁금하게 만듦
-- 슬라이드 2~N-1: 각각 독립된 가치 단위
-- 마지막 슬라이드: **감정·인사이트·여운**으로만 마무리. 행동 촉구, 링크, 팔로우 유도 절대 금지.
+${copyPrinciples}
 ${optionGuides}`;
 
   const newsContext = (newsItems && newsItems.length > 0)
@@ -2283,6 +2286,15 @@ function renderProjectSettings() {
             </div>
           </div>
         </div>
+          <div class="ch-field" style="margin-top:32px;padding-top:32px;border-top:1px solid #1a1a1a;">
+            <label class="ch-label">공통 카피라이팅 원칙</label>
+            <p class="ch-hint">모든 채널 AI 생성에 공통 적용됩니다. 비워두면 기본값 사용.</p>
+            <textarea class="ch-input ch-textarea" id="projCopyPrinciples" rows="18" style="font-size:11px;line-height:1.6;font-family:monospace;">${escHtml(localStorage.getItem('xmachina_copy_principles') || DEFAULT_COPY_PRINCIPLES)}</textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="ch-btn" id="projResetPrinciplesBtn" style="font-size:11px;padding:6px 12px;">기본값으로 초기화</button>
+            </div>
+          </div>
+        </div>
         <div class="proj-settings-footer">
           <span class="proj-save-status" id="projSaveStatus"></span>
           <button class="ch-btn ch-btn--primary" id="projSaveBtn">저장</button>
@@ -2298,6 +2310,9 @@ function renderProjectSettings() {
   });
   document.getElementById('projSaveBtn').addEventListener('click', saveProjectSettings);
   document.getElementById('projSettingsCloseBtn').addEventListener('click', () => setMode('edit'));
+  document.getElementById('projResetPrinciplesBtn').addEventListener('click', () => {
+    document.getElementById('projCopyPrinciples').value = DEFAULT_COPY_PRINCIPLES;
+  });
 }
 
 async function saveProjectSettings() {
@@ -2322,6 +2337,12 @@ async function saveProjectSettings() {
     state.channels = await dbGetChannels();
     if (typeof dashState !== 'undefined') dashState.channels = state.channels;
     newsCache = { items: [], sources: {}, fetchedAt: 0 };
+    const principles = document.getElementById('projCopyPrinciples').value.trim();
+    if (principles && principles !== DEFAULT_COPY_PRINCIPLES) {
+      localStorage.setItem('xmachina_copy_principles', principles);
+    } else {
+      localStorage.removeItem('xmachina_copy_principles');
+    }
     saveBtn.textContent = '저장';
     saveBtn.disabled = false;
     if (statusEl) { statusEl.textContent = '저장됨'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000); }
