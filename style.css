@@ -2414,13 +2414,13 @@ body {
 
 /* ── Figma-style canvas + frame layout ──────────────────────────────────── */
 .dash-canvas {
-  flex: 1; min-height: 0; overflow-y: auto;
+  flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden;
   padding: 28px 80px 40px;
-  display: flex; flex-direction: column; gap: 24px;
+  display: flex; flex-direction: row; align-items: flex-start; gap: 16px;
   background: #080808;
 }
 .dash-frame {
-  width: 100%;
+  width: 200px; flex-shrink: 0;
   display: flex; flex-direction: column;
 }
 .dash-frame-label {
@@ -2438,19 +2438,10 @@ body {
 }
 .dash-frame-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .dash-frame-actions .dash-post-btn { padding: 3px 8px; font-size: 9px; border-color: #222; color: #555; }
-/* ── Posts row (horizontal scroll per channel) ───────────────────────────── */
-.dash-posts-row {
-  display: flex; flex-direction: row; gap: 10px;
-  overflow-x: auto; padding-bottom: 6px;
-}
-.dash-posts-row::-webkit-scrollbar { height: 3px; }
-.dash-posts-row::-webkit-scrollbar-track { background: transparent; }
-.dash-posts-row::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-
 /* ── Thumb stack ─────────────────────────────────────────────────────────── */
 .dash-thumb-stack {
   position: relative;
-  width: 130px; flex-shrink: 0;
+  width: 100%;
   aspect-ratio: 4 / 5;
 }
 .dash-post-thumb-wrap {

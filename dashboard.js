@@ -102,16 +102,16 @@ function renderChannelColumn(ch) {
   const nextPost = allPosts[0] || null;
   const EMPTY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="5"><rect width="4" height="5" fill="%23111"/></svg>';
 
-  const postsHtml = allPosts.map(post => {
-    const isSched = post.status === 'scheduled';
-    const timeStr = isSched && post.scheduled_at
-      ? new Date(post.scheduled_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+  let thumbHtml = '';
+  if (nextPost) {
+    const isSched = nextPost.status === 'scheduled';
+    const timeStr = isSched && nextPost.scheduled_at
+      ? new Date(nextPost.scheduled_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
       : '';
-    const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || EMPTY;
-    const slideCount = (post.slide_images && post.slide_images.length) || 0;
-
-    return `
-      <div class="dash-thumb-stack" data-post-id="${post.id}">
+    const thumbUrl = nextPost.thumbnail_url || (nextPost.slide_images && nextPost.slide_images[0]) || EMPTY;
+    const slideCount = (nextPost.slide_images && nextPost.slide_images.length) || 0;
+    thumbHtml = `
+      <div class="dash-thumb-stack" data-post-id="${nextPost.id}">
         <div class="dash-post-thumb-wrap">
           <img src="${thumbUrl}" alt="" class="dash-post-thumb">
         </div>
@@ -124,14 +124,14 @@ function renderChannelColumn(ch) {
           </div>
         </div>
         ${slideCount > 1 ? `
-          <div class="dash-slide-nav" data-post-id="${post.id}">
+          <div class="dash-slide-nav" data-post-id="${nextPost.id}">
             <button class="dash-slide-arrow" data-dir="-1">&#8249;</button>
             <button class="dash-slide-arrow" data-dir="1">&#8250;</button>
           </div>
         ` : ''}
       </div>
     `;
-  }).join('');
+  }
 
   return `
     <div class="dash-frame" data-channel-id="${ch.id}">
@@ -147,7 +147,7 @@ function renderChannelColumn(ch) {
           </div>
         ` : ''}
       </div>
-      ${allPosts.length > 0 ? `<div class="dash-posts-row">${postsHtml}</div>` : ''}
+      ${thumbHtml}
     </div>
   `;
 }
