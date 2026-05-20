@@ -2413,18 +2413,17 @@ body {
 
 /* ── Figma-style canvas + frame layout ──────────────────────────────────── */
 .dash-canvas {
-  flex: 1; min-height: 0; overflow: hidden;
-  padding: 20px 28px;
-  display: flex; flex-direction: column; gap: 14px;
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding: 20px 28px 32px;
+  display: flex; flex-direction: column; gap: 20px;
   background: #060606;
 }
 .dash-canvas-row {
-  display: flex; gap: 12px; align-items: stretch;
-  flex: 1; min-height: 0;
+  display: flex; gap: 12px; align-items: flex-start;
 }
 .dash-canvas-row--center { justify-content: center; }
 .dash-frame {
-  flex: 1; min-height: 0;
+  flex: 1;
   max-width: calc((100% - 24px) / 3);
   display: flex; flex-direction: column;
 }
@@ -2449,8 +2448,9 @@ body {
 }
 /* ── Thumb stack (slide deck effect) ────────────────────────────────────── */
 .dash-thumb-stack {
-  flex: 1; min-height: 0;
   position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
 }
 .dash-thumb-layer {
   position: absolute; inset: 0;
