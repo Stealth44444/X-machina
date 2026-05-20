@@ -48,11 +48,7 @@ function getDateLabel(dateStr) {
 
 function renderDashboard() {
   const screen = document.getElementById('dashboardScreen');
-  const today = new Date();
-  const todayQueue = dashState.posts.filter(p =>
-    p.status !== 'published' && p.scheduled_at && isSameDay(new Date(p.scheduled_at), today)
-  );
-  const dateLabel = today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+  const dateLabel = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
 
   screen.innerHTML = `
     <div class="dash-inner">
@@ -60,11 +56,6 @@ function renderDashboard() {
         <div class="dash-header-left">
           <span class="dash-title">X MACHINA</span>
           <span class="dash-header-date">${dateLabel}</span>
-          <span class="dash-header-sched${todayQueue.length === 0 ? ' is-empty' : ''}">
-            ${todayQueue.length > 0
-              ? `<span class="mac-dot mac-dot--scheduled"></span><span>오늘 ${todayQueue.length}건</span>`
-              : '오늘 업로드 없음'}
-          </span>
         </div>
         <button class="dash-close-btn" id="dashCloseBtn">편집으로</button>
       </div>
@@ -134,7 +125,6 @@ function renderChannelColumn(ch) {
 
     inner = `
       <div class="dash-thumb-stack" data-post-id="${nextPost.id}">
-        ${hasStack ? '<div class="dash-thumb-layer dash-thumb-layer--back"></div><div class="dash-thumb-layer dash-thumb-layer--mid"></div>' : ''}
         <div class="dash-post-thumb-wrap">
           <img src="${thumbUrl}" alt="" class="dash-post-thumb">
         </div>
@@ -145,13 +135,6 @@ function renderChannelColumn(ch) {
               ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
             </div>
             ${isSched ? `<button class="dash-cancel-btn" data-post-id="${nextPost.id}">취소</button>` : ''}
-          </div>
-          <div class="dash-thumb-ui-bottom">
-            <div class="dash-thumb-ui-actions">
-              <button class="dash-post-btn dash-post-btn--done" data-post-id="${nextPost.id}">업로드 완료</button>
-              <button class="dash-post-btn dash-post-btn--edit" data-post-id="${nextPost.id}" data-channel-id="${nextPost.channel_id}">편집</button>
-              <button class="dash-post-btn dash-post-btn--download" data-post-id="${nextPost.id}">저장</button>
-            </div>
           </div>
         </div>
         ${slideCount > 1 ? `
@@ -172,7 +155,13 @@ function renderChannelColumn(ch) {
       <div class="dash-frame-label">
         <span class="dash-frame-dot" style="background:${ch.color}"></span>
         <span class="dash-frame-name">${escSafe(ch.name)}</span>
-        <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
+        ${nextPost ? `
+          <div class="dash-frame-actions">
+            <button class="dash-post-btn dash-post-btn--done" data-post-id="${nextPost.id}">완료</button>
+            <button class="dash-post-btn dash-post-btn--edit" data-post-id="${nextPost.id}" data-channel-id="${nextPost.channel_id}">편집</button>
+            <button class="dash-post-btn dash-post-btn--download" data-post-id="${nextPost.id}">저장</button>
+          </div>
+        ` : ''}
       </div>
       ${inner}
     </div>

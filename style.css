@@ -2440,30 +2440,14 @@ body {
   flex: 1; text-transform: uppercase;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.dash-frame-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.dash-frame-actions .dash-post-btn { padding: 3px 8px; font-size: 9px; }
 /* ── Thumb stack (slide deck effect) ────────────────────────────────────── */
 .dash-thumb-stack {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
 }
-.dash-thumb-layer {
-  position: absolute; inset: 0;
-  border-radius: 8px; border: 1px solid;
-  transition: transform 0.25s ease;
-  will-change: transform;
-}
-.dash-thumb-layer--back {
-  background: #070707; border-color: #1c1c1c;
-  transform: rotate(-2deg) scale(0.955);
-  z-index: 0;
-}
-.dash-thumb-layer--mid {
-  background: #0b0b0b; border-color: #161616;
-  transform: rotate(1.2deg) scale(0.977);
-  z-index: 1;
-}
-.dash-thumb-stack:hover .dash-thumb-layer--back { transform: rotate(-3deg) scale(0.955); }
-.dash-thumb-stack:hover .dash-thumb-layer--mid  { transform: rotate(1.8deg) scale(0.977); }
 .dash-post-thumb-wrap {
   position: absolute; inset: 0;
   background: #080808; border-radius: 8px; overflow: hidden;
