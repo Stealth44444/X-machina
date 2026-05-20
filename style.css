@@ -2428,7 +2428,7 @@ body {
 
 /* ── Post card status row ────────────────────────────────────────────────── */
 .dash-post-status-row { display: flex; align-items: center; gap: 6px; }
-.dash-post-time { font-size: 11px; font-weight: 600; color: #e8e8e8; letter-spacing: 0.3px; }
+.dash-post-time { font-size: 10px; font-weight: 600; color: #e8e8e8; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
 .dash-post-draft-lbl { font-size: 9px; color: #333; letter-spacing: 0.5px; }
 
 /* ── Cancel button ───────────────────────────────────────────────────────── */
@@ -2452,76 +2452,104 @@ body {
   background: #080808;
 }
 .dash-frame {
-  width: 200px; flex-shrink: 0;
+  flex-shrink: 0;
   display: flex; flex-direction: column;
 }
 .dash-frame-label {
   display: flex; align-items: center; gap: 7px;
-  padding: 0 2px 8px; flex-shrink: 0;
+  padding: 0 4px 10px; flex-shrink: 0;
 }
 .dash-frame-dot {
-  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
 }
 .dash-frame-name {
-  font-size: 10px; font-weight: 700;
-  color: #555; letter-spacing: 1.8px;
+  font-size: 9px; font-weight: 700;
+  color: #444; letter-spacing: 2px;
   flex: 1; text-transform: uppercase;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.dash-frame-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.dash-frame-actions .dash-post-btn { padding: 3px 8px; font-size: 9px; border-color: #222; color: #555; }
+.dash-frame-empty-lbl {
+  font-size: 9px; color: #2a2a2a; letter-spacing: 0.5px;
+}
 /* ── Thumb stack ─────────────────────────────────────────────────────────── */
 .dash-thumb-stack {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
+  border-radius: 10px;
+  overflow: hidden;
 }
 .dash-post-thumb-wrap {
   position: absolute; inset: 0;
-  background: #111; border-radius: 8px; overflow: hidden;
-  border: 1px solid #222; z-index: 2; cursor: pointer;
+  background: #0d0d0d;
+  border: 1px solid #1e1e1e; z-index: 2; cursor: pointer;
+  transition: border-color 0.2s;
 }
+.dash-post-thumb-wrap:hover { border-color: #333; }
 .dash-post-thumb {
   width: 100%; height: 100%; object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
 }
-.dash-post-thumb-wrap:hover .dash-post-thumb { transform: scale(1.03); }
+.dash-post-thumb-wrap:hover .dash-post-thumb { transform: scale(1.04); }
 
 /* ── Thumb UI overlay ────────────────────────────────────────────────────── */
 .dash-thumb-ui {
   position: absolute; inset: 0; z-index: 3;
   display: flex; flex-direction: column; justify-content: space-between;
-  padding: 10px; pointer-events: none;
+  padding: 12px; pointer-events: none;
 }
 .dash-thumb-ui-top {
   display: flex; align-items: flex-start; justify-content: space-between;
   pointer-events: auto;
 }
 .dash-thumb-ui-status {
-  display: flex; align-items: center; gap: 5px;
-  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
-  padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.04);
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,0.72); backdrop-filter: blur(8px);
+  padding: 5px 10px; border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.05);
 }
-.dash-frame-actions .dash-cancel-btn { padding: 3px 8px; font-size: 9px; }
+.dash-post-date-badge {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.4);
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 5px 8px; border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.05);
+  pointer-events: none;
+}
 .dash-frame-extra { font-size: 9px; color: #555; letter-spacing: 0.3px; }
 .dash-thumb-ui-bottom {
   display: flex; align-items: flex-end; justify-content: space-between;
   pointer-events: auto;
 }
 .dash-thumb-ui-actions {
-  display: flex; gap: 4px;
-  opacity: 0; transform: translateY(4px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  display: flex; gap: 5px;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .dash-thumb-stack:hover .dash-thumb-ui-actions {
   opacity: 1; transform: translateY(0);
 }
 .dash-thumb-ui-actions .dash-post-btn {
-  background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
-  border-color: rgba(255,255,255,0.1); color: #bbb;
-  padding: 5px 10px;
+  background: rgba(8,8,8,0.85); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08); color: #aaa;
+  padding: 6px 12px; font-size: 10px; border-radius: 4px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.dash-thumb-ui-actions .dash-post-btn:hover { border-color: rgba(255,255,255,0.3); color: #fff; background: rgba(0,0,0,0.9); }
+.dash-thumb-ui-actions .dash-post-btn:hover {
+  border-color: rgba(255,255,255,0.25); color: #fff;
+  background: rgba(0,0,0,0.95);
+}
+.dash-thumb-ui-bottom .dash-cancel-btn {
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-size: 9px; padding: 4px 9px;
+  background: rgba(8,8,8,0.85); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.06); color: #444;
+}
+.dash-thumb-stack:hover .dash-thumb-ui-bottom .dash-cancel-btn {
+  opacity: 1; transform: translateY(0);
+}
+.dash-thumb-ui-bottom .dash-cancel-btn:hover { color: #e05050; border-color: #a04040; }
 
 /* ── Slide arrow navigation ──────────────────────────────────────────────── */
 .dash-slide-nav {

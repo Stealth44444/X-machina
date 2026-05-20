@@ -769,6 +769,8 @@ function scaleCanvas() {
   canvas.style.transform = `scale(${scale})`;
   wrapper.style.width = `${Math.round(1080 * scale)}px`;
   wrapper.style.height = `${Math.round(canvasH * scale)}px`;
+  window._canvasDisplayW = Math.round(1080 * scale);
+  window._canvasDisplayH = Math.round(canvasH * scale);
 }
 
 function renderCanvas() {

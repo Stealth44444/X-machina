@@ -94,20 +94,26 @@ function renderQueueTab() {
   return `<div class="dash-canvas">${visibleChannels.map(ch => renderChannelColumn(ch)).join('')}</div>`;
 }
 
+function fmtDateTime(dateStr) {
+  const d = new Date(dateStr);
+  const date = getDateLabel(dateStr);
+  const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return { date, time };
+}
+
 function renderChannelColumn(ch) {
   const allPosts = dashState.posts
     .filter(p => p.channel_id === ch.id && p.status === 'scheduled')
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
 
   const nextPost = allPosts[0] || null;
+  const frameW = Math.round((window._canvasDisplayW || 420) * 0.7);
   const EMPTY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="5"><rect width="4" height="5" fill="%23111"/></svg>';
 
   let thumbHtml = '';
   if (nextPost) {
     const isSched = nextPost.status === 'scheduled';
-    const timeStr = isSched && nextPost.scheduled_at
-      ? new Date(nextPost.scheduled_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-      : '';
+    const dt = isSched && nextPost.scheduled_at ? fmtDateTime(nextPost.scheduled_at) : null;
     const thumbUrl = nextPost.thumbnail_url || (nextPost.slide_images && nextPost.slide_images[0]) || EMPTY;
     const slideCount = (nextPost.slide_images && nextPost.slide_images.length) || 0;
     thumbHtml = `
@@ -119,8 +125,17 @@ function renderChannelColumn(ch) {
           <div class="dash-thumb-ui-top">
             <div class="dash-thumb-ui-status">
               <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
-              ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
+              ${dt ? `<span class="dash-post-time">${dt.time}</span>` : ''}
             </div>
+            ${dt ? `<span class="dash-post-date-badge">${dt.date}</span>` : ''}
+          </div>
+          <div class="dash-thumb-ui-bottom">
+            <div class="dash-thumb-ui-actions">
+              <button class="dash-post-btn dash-post-btn--edit" data-post-id="${nextPost.id}" data-channel-id="${nextPost.channel_id}">편집</button>
+              <button class="dash-post-btn dash-post-btn--download" data-post-id="${nextPost.id}">저장</button>
+              <button class="dash-post-btn dash-post-btn--done" data-post-id="${nextPost.id}">완료</button>
+            </div>
+            <button class="dash-cancel-btn" data-post-id="${nextPost.id}">취소</button>
           </div>
         </div>
         ${slideCount > 1 ? `
@@ -129,23 +144,17 @@ function renderChannelColumn(ch) {
             <button class="dash-slide-arrow" data-dir="1">&#8250;</button>
           </div>
         ` : ''}
+        ${slideCount > 1 ? `<span class="dash-slide-badge">${slideCount}장</span>` : ''}
       </div>
     `;
   }
 
   return `
-    <div class="dash-frame" data-channel-id="${ch.id}">
+    <div class="dash-frame" style="width:${frameW}px" data-channel-id="${ch.id}">
       <div class="dash-frame-label">
         <span class="dash-frame-dot" style="background:${ch.color}"></span>
         <span class="dash-frame-name">${escSafe(ch.name)}</span>
-        ${nextPost ? `
-          <div class="dash-frame-actions">
-            <button class="dash-post-btn dash-post-btn--done" data-post-id="${nextPost.id}">완료</button>
-            <button class="dash-post-btn dash-post-btn--edit" data-post-id="${nextPost.id}" data-channel-id="${nextPost.channel_id}">편집</button>
-            <button class="dash-post-btn dash-post-btn--download" data-post-id="${nextPost.id}">저장</button>
-            <button class="dash-cancel-btn" data-post-id="${nextPost.id}">취소</button>
-          </div>
-        ` : ''}
+        ${!nextPost ? '<span class="dash-frame-empty-lbl">대기 없음</span>' : ''}
       </div>
       ${thumbHtml}
     </div>
@@ -154,9 +163,8 @@ function renderChannelColumn(ch) {
 
 function renderPostCard(post) {
   const isSched = post.status === 'scheduled';
-  const timeStr = isSched && post.scheduled_at
-    ? new Date(post.scheduled_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-    : '';
+  const dt = isSched && post.scheduled_at ? fmtDateTime(post.scheduled_at) : null;
+  const timeStr = dt ? `${dt.date} ${dt.time}` : '';
   const EMPTY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="5"><rect width="4" height="5" fill="%23111"/></svg>';
   const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || EMPTY;
   const slideCount = (post.slide_images && post.slide_images.length) || 0;
@@ -244,7 +252,7 @@ function renderCalendarTab() {
         ${selPosts.length === 0 ? '<div class="dash-cal-detail-empty">게시물 없음</div>' : selPosts.map(p => {
           const ch = dashState.channels.find(c => c.id === p.channel_id);
           const ds = p.status === 'published' ? p.published_at : p.scheduled_at;
-          const timeStr = ds ? new Date(ds).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '—';
+          const timeStr = ds ? new Date(ds).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '—';
           const isDone = p.status === 'published';
           const title = (p.presets && p.presets.name) || p.caption || '—';
           return `<div class="dash-cal-detail-item">
@@ -306,7 +314,7 @@ function renderHistoryTab() {
       const ch = dashState.channels.find(c => c.id === post.channel_id);
       const thumbUrl = post.thumbnail_url || (post.slide_images && post.slide_images[0]) || '';
       const title = (post.presets && post.presets.name) || post.caption || '—';
-      const timeStr = new Date(post.published_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      const timeStr = new Date(post.published_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
       html += `<div class="dash-history-item">
         ${thumbUrl ? `<img src="${thumbUrl}" alt="" class="dash-history-thumb">` : '<div class="dash-history-thumb dash-history-thumb--empty"></div>'}
         <div class="dash-history-info">
