@@ -2258,7 +2258,7 @@ body {
 .dash-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 24px; border-bottom: 1px solid #1a1a1a;
-  flex-shrink: 0; gap: 16px;
+  flex-shrink: 0; gap: 16px; background: #0f0f0f;
 }
 .dash-header-left { display: flex; align-items: center; gap: 16px; }
 .dash-title { font-size: 12px; font-weight: 900; color: #e8e8e8; letter-spacing: 2.5px; }
@@ -2361,7 +2361,8 @@ body {
 /* ── Channel filter row ──────────────────────────────────────────────────── */
 .dash-channel-filter {
   display: flex; align-items: center; gap: 6px;
-  padding: 8px 20px; border-bottom: 1px solid #111; flex-shrink: 0; flex-wrap: wrap;
+  padding: 8px 20px; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; flex-wrap: wrap;
+  background: #0f0f0f;
 }
 .dash-filter-label { font-size: 9px; color: #333; letter-spacing: 1px; margin-right: 2px; }
 .dash-ch-filter-btn {
@@ -2414,34 +2415,34 @@ body {
 /* ── Figma-style canvas + frame layout ──────────────────────────────────── */
 .dash-canvas {
   flex: 1; min-height: 0; overflow-y: auto;
-  padding: 20px 28px 32px;
-  display: flex; flex-direction: column; gap: 20px;
-  background: #060606;
+  padding: 28px 80px 40px;
+  display: flex; flex-direction: column; gap: 24px;
+  background: #080808;
 }
 .dash-canvas-row {
-  display: flex; gap: 12px; align-items: flex-start;
+  display: flex; gap: 16px; align-items: flex-start;
 }
 .dash-canvas-row--center { justify-content: center; }
 .dash-frame {
   flex: 1;
-  max-width: calc((100% - 24px) / 3);
+  max-width: calc((100% - 32px) / 3);
   display: flex; flex-direction: column;
 }
 .dash-frame-label {
   display: flex; align-items: center; gap: 7px;
-  padding: 0 4px 7px; flex-shrink: 0;
+  padding: 0 2px 8px; flex-shrink: 0;
 }
 .dash-frame-dot {
-  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
 }
 .dash-frame-name {
   font-size: 10px; font-weight: 700;
-  color: #444; letter-spacing: 1.8px;
+  color: #555; letter-spacing: 1.8px;
   flex: 1; text-transform: uppercase;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .dash-frame-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.dash-frame-actions .dash-post-btn { padding: 3px 8px; font-size: 9px; }
+.dash-frame-actions .dash-post-btn { padding: 3px 8px; font-size: 9px; border-color: #222; color: #555; }
 /* ── Thumb stack (slide deck effect) ────────────────────────────────────── */
 .dash-thumb-stack {
   position: relative;
@@ -2450,8 +2451,8 @@ body {
 }
 .dash-post-thumb-wrap {
   position: absolute; inset: 0;
-  background: #080808; border-radius: 8px; overflow: hidden;
-  border: 1px solid #1a1a1a; z-index: 2; cursor: pointer;
+  background: #111; border-radius: 8px; overflow: hidden;
+  border: 1px solid #222; z-index: 2; cursor: pointer;
 }
 .dash-post-thumb {
   width: 100%; height: 100%; object-fit: cover;
@@ -2497,10 +2498,9 @@ body {
 
 /* ── Frame empty state ───────────────────────────────────────────────────── */
 .dash-frame-empty {
-  flex: 1; min-height: 0;
-  border: 1px dashed #1c1c1c; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  color: #252525; font-size: 10px; letter-spacing: 0.5px;
+  aspect-ratio: 4 / 5; width: 100%;
+  border: 1px dashed #222; border-radius: 8px;
+  background: #0d0d0d;
 }
 
 /* ── Slide arrow navigation ──────────────────────────────────────────────── */
@@ -2529,7 +2529,8 @@ body {
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 .dash-tabs {
-  display: flex; border-bottom: 1px solid #111; flex-shrink: 0; padding: 0 20px;
+  display: flex; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; padding: 0 20px;
+  background: #0f0f0f;
 }
 .dash-tab-btn {
   padding: 9px 16px; background: transparent; border: none;
