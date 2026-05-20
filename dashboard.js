@@ -7,6 +7,7 @@ let dashState = {
   calYear: new Date().getFullYear(),
   calMonth: new Date().getMonth(),
   calDay: null,
+  slideIndexes: new Map(),
 };
 
 async function showDashboard() {
@@ -14,6 +15,11 @@ async function showDashboard() {
   const screen = document.getElementById('dashboardScreen');
   screen.style.display = 'flex';
   screen.innerHTML = '<div class="dash-loading">불러오는 중...</div>';
+  try {
+    const saved = JSON.parse(localStorage.getItem('dash_hidden_channels') || '[]');
+    dashState.hiddenChannels = new Set(saved);
+  } catch(e) { dashState.hiddenChannels = new Set(); }
+  dashState.slideIndexes = new Map();
   dashState.channels = (typeof state !== 'undefined' && state.channels) || await dbGetChannels();
   dashState.posts = await dbGetAllPosts();
   renderDashboard();
@@ -113,10 +119,7 @@ function renderChannelColumn(ch) {
       return new Date(b.created_at) - new Date(a.created_at);
     });
 
-  const today = new Date();
-  const todayCount = allPosts.filter(p => p.status === 'scheduled' && isSameDay(new Date(p.scheduled_at), today)).length;
   const nextPost = allPosts[0] || null;
-  const extraCount = allPosts.length - 1;
 
   let inner = '';
   if (nextPost) {
@@ -140,12 +143,10 @@ function renderChannelColumn(ch) {
             <div class="dash-thumb-ui-status">
               <span class="mac-dot ${isSched ? 'mac-dot--scheduled' : 'mac-dot--draft'}"></span>
               ${isSched && timeStr ? `<span class="dash-post-time">${timeStr}</span>` : ''}
-              ${extraCount > 0 ? `<span class="dash-frame-extra">+${extraCount}</span>` : ''}
             </div>
             ${isSched ? `<button class="dash-cancel-btn" data-post-id="${nextPost.id}">취소</button>` : ''}
           </div>
           <div class="dash-thumb-ui-bottom">
-            ${slideCount > 1 ? `<span class="dash-slide-badge">${slideCount}장</span>` : ''}
             <div class="dash-thumb-ui-actions">
               <button class="dash-post-btn dash-post-btn--done" data-post-id="${nextPost.id}">업로드 완료</button>
               <button class="dash-post-btn dash-post-btn--edit" data-post-id="${nextPost.id}" data-channel-id="${nextPost.channel_id}">편집</button>
@@ -153,10 +154,17 @@ function renderChannelColumn(ch) {
             </div>
           </div>
         </div>
+        ${slideCount > 1 ? `
+          <div class="dash-slide-nav" data-post-id="${nextPost.id}">
+            <button class="dash-slide-arrow" data-dir="-1">&#8249;</button>
+            <span class="dash-slide-counter">1 / ${slideCount}</span>
+            <button class="dash-slide-arrow" data-dir="1">&#8250;</button>
+          </div>
+        ` : ''}
       </div>
     `;
   } else {
-    inner = '<div class="dash-frame-empty">대기 없음</div>';
+    inner = '<div class="dash-frame-empty"></div>';
   }
 
   return `
@@ -164,10 +172,7 @@ function renderChannelColumn(ch) {
       <div class="dash-frame-label">
         <span class="dash-frame-dot" style="background:${ch.color}"></span>
         <span class="dash-frame-name">${escSafe(ch.name)}</span>
-        <div class="dash-frame-meta">
-          ${todayCount > 0 ? `<span class="dash-frame-today">${todayCount}</span>` : ''}
-          <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
-        </div>
+        <button class="dash-col-settings" data-channel-id="${ch.id}">설정</button>
       </div>
       ${inner}
     </div>
@@ -359,6 +364,7 @@ function bindDashboardEvents() {
       const id = btn.dataset.channelId;
       if (dashState.hiddenChannels.has(id)) dashState.hiddenChannels.delete(id);
       else dashState.hiddenChannels.add(id);
+      localStorage.setItem('dash_hidden_channels', JSON.stringify([...dashState.hiddenChannels]));
       renderDashboard();
     });
   });
@@ -375,9 +381,12 @@ function bindDashboardEvents() {
     btn.addEventListener('click', () => openPostInEditor(btn.dataset.postId, btn.dataset.channelId));
   });
 
-  document.querySelectorAll('.dash-post-thumb').forEach(img => {
-    const stack = img.closest('.dash-thumb-stack');
-    img.addEventListener('click', () => openLightbox(stack?.dataset.postId));
+  document.querySelectorAll('.dash-slide-arrow').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const postId = btn.closest('.dash-slide-nav').dataset.postId;
+      navigateSlide(postId, parseInt(btn.dataset.dir));
+    });
   });
   document.querySelectorAll('.dash-thumb-ui button').forEach(btn => {
     btn.addEventListener('click', e => e.stopPropagation());
@@ -416,6 +425,22 @@ function bindDashboardEvents() {
       renderDashboard();
     });
   });
+}
+
+// ── Slide navigation ──────────────────────────────────────────────────────
+
+function navigateSlide(postId, dir) {
+  const post = dashState.posts.find(p => p.id === postId);
+  if (!post || !post.slide_images || post.slide_images.length <= 1) return;
+  const total = post.slide_images.length;
+  const current = dashState.slideIndexes.get(postId) || 0;
+  const next = Math.max(0, Math.min(total - 1, current + dir));
+  if (next === current) return;
+  dashState.slideIndexes.set(postId, next);
+  const img = document.querySelector(`.dash-thumb-stack[data-post-id="${postId}"] .dash-post-thumb`);
+  if (img) img.src = post.slide_images[next];
+  const counter = document.querySelector(`.dash-slide-nav[data-post-id="${postId}"] .dash-slide-counter`);
+  if (counter) counter.textContent = `${next + 1} / ${total}`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────

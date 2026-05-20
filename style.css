@@ -2440,12 +2440,6 @@ body {
   flex: 1; text-transform: uppercase;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.dash-frame-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.dash-frame-today {
-  font-size: 9px; font-weight: 700; color: #e5a400;
-  background: rgba(229,164,0,0.1); border: 1px solid rgba(229,164,0,0.25);
-  padding: 1px 6px; border-radius: 3px; letter-spacing: 0.3px;
-}
 /* ── Thumb stack (slide deck effect) ────────────────────────────────────── */
 .dash-thumb-stack {
   position: relative;
@@ -2525,12 +2519,28 @@ body {
   color: #252525; font-size: 10px; letter-spacing: 0.5px;
 }
 
-/* ── Slide count badge ───────────────────────────────────────────────────── */
-.dash-slide-badge {
-  position: absolute; bottom: 6px; right: 6px;
-  background: rgba(0,0,0,0.78); color: #666;
-  font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
-  padding: 2px 6px; border-radius: 3px; pointer-events: none;
+/* ── Slide arrow navigation ──────────────────────────────────────────────── */
+.dash-slide-nav {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px; pointer-events: none;
+}
+.dash-slide-arrow {
+  pointer-events: auto;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.1); color: #e8e8e8;
+  font-size: 20px; line-height: 1; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.dash-thumb-stack:hover .dash-slide-arrow { opacity: 1; }
+.dash-slide-arrow:hover { background: rgba(0,0,0,0.85); border-color: rgba(255,255,255,0.25); }
+.dash-slide-counter {
+  font-size: 9px; color: rgba(255,255,255,0.45); letter-spacing: 0.3px;
+  background: rgba(0,0,0,0.6); padding: 2px 7px; border-radius: 3px;
+  pointer-events: none;
 }
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
