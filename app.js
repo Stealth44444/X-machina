@@ -86,14 +86,28 @@ window.outroSlide = function() {
   `;
 };
 
+const CHANNEL_FONTS = {
+  'CAPITALFLOW':     { h: "'Space Grotesk',sans-serif",      hW: 700, b: "'Space Grotesk',sans-serif",                          bW: 300 },
+  'spacelog':        { h: "'Cormorant Garamond',serif",       hW: 700, b: "'Inter',sans-serif",                                   bW: 300 },
+  'obscurelife.kr':  { h: "'Plus Jakarta Sans',sans-serif",   hW: 700, b: "'Manrope',sans-serif",                                 bW: 400 },
+  'mma_seoul':       { h: "'Noto Sans KR',sans-serif",        hW: 900, b: "'NanumSquare',sans-serif",                             bW: 400 },
+  'Nightcall.audio': { h: "'Pretendard',sans-serif",          hW: 700, b: "'Pretendard Variable','Pretendard',sans-serif",        bW: 400 },
+};
+function getChannelFonts() {
+  const ch = state.channels && state.channels.find(c => c.id === state.projectId);
+  return CHANNEL_FONTS[ch && ch.name] || { h: "'Pretendard Variable','Pretendard',sans-serif", hW: 700, b: "'Pretendard Variable','Pretendard',sans-serif", bW: 400 };
+}
+window.getChannelFonts = getChannelFonts;
+
 window.contentSlide = function(s, idx, total) {
+  const f = window.getChannelFonts();
   const body = (s.body || '').replace(/\*\*(.*?)\*\*/g, '<span style="font-weight:800;color:#fff">$1</span>');
   return `
     <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,0.75) 62%,#000 100%);pointer-events:none;"></div>
     <div style="position:absolute;top:40px;right:48px;font-size:18px;font-weight:400;color:rgba(255,255,255,0.2);pointer-events:none;">${idx}/${total - 1}</div>
     <div style="position:absolute;bottom:120px;left:56px;right:56px;">
-      <div data-drag-key="title" style="font-size:56px;font-weight:800;line-height:1.2;color:#fff;white-space:pre-wrap;margin-bottom:28px;">${s.title || ''}</div>
-      <div data-drag-key="body" style="font-size:36px;font-weight:400;color:rgba(255,255,255,0.90);line-height:1.7;white-space:pre-wrap;">${body}</div>
+      <div data-drag-key="title" style="font-family:${f.h};font-size:56px;font-weight:${f.hW};line-height:1.2;color:#fff;white-space:pre-wrap;margin-bottom:28px;">${s.title || ''}</div>
+      <div data-drag-key="body" style="font-family:${f.b};font-size:36px;font-weight:${f.bW};color:rgba(255,255,255,0.90);line-height:1.7;white-space:pre-wrap;">${body}</div>
     </div>
   `;
 };

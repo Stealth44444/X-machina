@@ -16,10 +16,11 @@ window.GYMSPIRE_TEMPLATES.push({
   },
   render(s, slideIndex, total) {
     if (slideIndex > 0) return window.contentSlide(s, slideIndex, total);
+    const f = window.getChannelFonts();
     return `
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,0.8) 65%,#000 100%);"></div>
-      <div data-drag-key="title" style="position:absolute;bottom:220px;left:48px;right:48px;font-size:68px;font-weight:800;line-height:1.15;color:#fff;white-space:pre-wrap;">${s.title || ''}</div>
-      <div data-drag-key="subtitle" style="position:absolute;bottom:150px;left:48px;right:48px;font-size:30px;font-weight:400;color:rgba(255,255,255,0.80);">${s.subtitle || ''}</div>
+      <div data-drag-key="title" style="position:absolute;bottom:220px;left:48px;right:48px;font-family:${f.h};font-size:68px;font-weight:${f.hW};line-height:1.15;color:#fff;white-space:pre-wrap;">${s.title || ''}</div>
+      <div data-drag-key="subtitle" style="position:absolute;bottom:150px;left:48px;right:48px;font-family:${f.b};font-size:30px;font-weight:${f.bW};color:rgba(255,255,255,0.80);">${s.subtitle || ''}</div>
     `;
   }
 });
